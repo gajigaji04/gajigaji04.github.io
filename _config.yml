@@ -16,7 +16,7 @@ timezone: Asia/Seoul
 
 title: gajigaji04.io # the main title
 
-tagline: 웹 백엔드 공부 중 # it will display as the sub-title
+tagline: 웹 개발 공부 중 # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.

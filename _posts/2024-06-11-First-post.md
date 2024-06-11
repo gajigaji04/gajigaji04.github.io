@@ -1,8 +1,10 @@
 ---
 title: first post
-author: cotes
+description: >-
+  여긴 소제목
+author: gajigaji04
 date: 2024-06-11 00:34:00 +0800
-categories: [Blogging, Tutorial]
+categories: [Blogging]
 tags: [favicon]
 ---
 
