@@ -10,3 +10,21 @@ tags: [favicon]
 
 # 안녕하세요
 첫 포스팅
+
+```python
+print("hello world")
+```
+
+```javascript
+console.log("hello world");
+```
+
+```java
+package test
+
+pubric class TestMain {
+    pubric static void main(String[] args) {
+        System.out.println("hello world");
+    }
+}
+```
