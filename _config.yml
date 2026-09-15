@@ -50,8 +50,9 @@ plainwhite:
 #header_pages:
 # - about.md
 
-# Build settings
-theme: plainwhite
+# github action 페이지 로딩 오류로 잠시 주석처리 함
+# # Build settings
+# theme: plainwhite
 
 plugins:
   - jekyll-seo-tag
