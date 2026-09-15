@@ -1,0 +1,26 @@
+---
+layout: post
+title: "github.io 글 작성 테스트"
+date: 2026-09-15 19:04:36 +0900
+categories: Jekyll
+---
+
+# Jekyll 테스트
+
+Plainwhite 테마에서 글이 정상적으로 표시되는지 확인하기 위한 테스트 글입니다.
+
+## 테스트 내용
+
+- 제목 표시
+- 본문 표시
+- 카테고리 표시
+- 태그 표시
+- 코드 블록 표시
+
+```javascript
+const message = "Hello Jekyll!";
+
+console.log(message);
+```
+
+테스트가 정상적으로 보인다면 다음에는 포트폴리오용 개발 기록을 작성해볼 예정입니다.
