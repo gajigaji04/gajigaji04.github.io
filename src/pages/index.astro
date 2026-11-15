@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import TechIcon from '../components/TechIcon.astro';
+import SampleBadge from '../components/SampleBadge.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import PostCard from '../components/PostCard.astro';
+import { PROFILE, STACK, STACK_IS_SAMPLE } from '../data/profile';
+import { getPosts, getProjects, emph } from '../lib/content';
+import { getGithubActivity } from '../lib/github';
+
+const allProjects = await getProjects();
+const projects = allProjects.filter((p) => p.data.featured).slice(0, 4);
+const allPosts = await getPosts();
+const posts = allPosts.slice(0, 2);
+const gh = await getGithubActivity();
+const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString('ko-KR'));
+---
+<BaseLayout>
+  <div data-pagefind-body data-pagefind-meta="kind:page">
+    <section class="sec page-head" id="profile">
+      <div class="prof">
+        <img class="avatar" src={PROFILE.avatar} alt={`${PROFILE.handle} 프로필 사진`} width="112" height="112" />
+        <div style="min-width: 0">
+          <h1>{PROFILE.handle}</h1>
+          <p class="tagline">
+            {PROFILE.name.value} · {PROFILE.headline.value} <SampleBadge show={PROFILE.name.sample || PROFILE.headline.sample} />
+          </p>
+        </div>
+      </div>
+
+      <ul class="ov" aria-label="개요">
+        <li class="ovi"><span class="bx"><Icon name="briefcase" class="ico-sm" /></span><span>{PROFILE.role.value}</span></li>
+        <li class="ovi"><span class="bx"><Icon name="pin" class="ico-sm" /></span><span>{PROFILE.location}</span></li>
+        <li class="ovi">
+          <span class="bx"><Icon name="clock" class="ico-sm" /></span>
+          <span class="mono" style="font-size: 13px"><time data-clock>--:--</time><span class="muted">// KST</span></span>
+        </li>
+        <li class="ovi"><span class="bx"><Icon name="mail" class="ico-sm" /></span><a href={`mailto:${PROFILE.email}`}>{PROFILE.email}</a></li>
+        <li class="ovi"><span class="bx"><Icon name="link" class="ico-sm" /></span><a href={`https://github.com/${PROFILE.github}`}>github.com/{PROFILE.github}</a></li>
+        <li class="ovi"><span class="bx"><span class="dot" aria-hidden="true"></span></span><span>{PROFILE.status.value}</span></li>
+      </ul>
+
+      <div class="cta">
+        {
+          PROFILE.resumeUrl ? (
+            <a class="btn pri" href={PROFILE.resumeUrl}><Icon name="download" class="ico-sm" />이력서 PDF</a>
+          ) : (
+            <a class="btn pri" role="link" aria-disabled="true" title="이력서 PDF 준비 중"><Icon name="download" class="ico-sm" />이력서 PDF</a>
+          )
+        }
+        <a class="btn" href={`mailto:${PROFILE.email}`}><Icon name="mail" class="ico-sm" />메일 보내기</a>
+      </div>
+    </section>
+
+    <section class="sec" id="about">
+      <h2 class="h2">About <SampleBadge show={PROFILE.about.sample} /></h2>
+      <ul class="about">
+        {PROFILE.about.points.map((t) => <li><span set:html={emph(t)} /></li>)}
+      </ul>
+    </section>
+
+    <section class="sec" id="stack">
+      <h2 class="h2">Stack <SampleBadge show={STACK_IS_SAMPLE} /></h2>
+      <ul class="stack" aria-label="기술 스택">
+        {STACK.map((name) => <li><TechIcon name={name} size={32} /></li>)}
+      </ul>
+    </section>
+
+    <section class="sec" id="github" data-pagefind-ignore>
+      <h2 class="h2">GitHub Contributions</h2>
+      <div class="heat-scroll" data-heat-scroll>
+        <div class="heat" role="img" aria-label={gh.source === 'api' ? `최근 1년 GitHub 기여 ${fmt(gh.total)}회` : '최근 1년 GitHub 기여 그래프 (예시 데이터)'}>
+          {gh.weeks.flat().map((d) => <i class={`lv${d.level}`} title={gh.source === 'api' ? `${d.date} · ${d.count}` : undefined}></i>)}
+        </div>
+      </div>
+      <div class="gh-meta">
+        <span>
+          {gh.source === 'api' ? <><b>{fmt(gh.total)}</b> contributions in the last year</> : <>예시 데이터 · 배포 빌드에서 GitHub API로 갱신 <SampleBadge /></>}
+        </span>
+        <span class="legend" aria-hidden="true">Less <i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i> More</span>
+      </div>
+      <dl class="gh-stats">
+        <div><dt>Repositories</dt><dd>{fmt(gh.repositories)}</dd></div>
+        <div><dt>Longest streak</dt><dd>{gh.longestStreak === null ? '—' : `${gh.longestStreak}일`}</dd></div>
+        <div><dt>Top language</dt><dd>{gh.topLanguage ?? '—'}</dd></div>
+      </dl>
+    </section>
+
+    <section class="sec" id="projects">
+      <h2 class="h2">Projects<sup>{allProjects.length}</sup></h2>
+      <div class="cards">{projects.map((p) => <ProjectCard project={p} />)}</div>
+      <div class="more"><a class="btn" href="/projects/">모든 프로젝트 보기</a></div>
+    </section>
+
+    <section class="sec" id="blog">
+      <h2 class="h2">Blog<sup>{allPosts.length}</sup></h2>
+      <div class="cards">{posts.map((p) => <PostCard post={p} />)}</div>
+      <div class="more"><a class="btn" href="/blog/">모든 글 보기</a></div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  // 서울 현재 시각
+  const el = document.querySelector<HTMLTimeElement>('[data-clock]');
+  const tick = () => {
+    if (!el) return;
+    el.textContent = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+  };
+  tick();
+  setInterval(tick, 30_000);
+  // 기여 그래프는 최근(오른쪽)부터 보이도록
+  const s = document.querySelector<HTMLElement>('[data-heat-scroll]');
+  if (s) s.scrollLeft = s.scrollWidth;
+</script>

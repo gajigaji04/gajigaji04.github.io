@@ -1,0 +1,109 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import TechIcon from '../../components/TechIcon.astro';
+import SampleBadge from '../../components/SampleBadge.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import Cover from '../../components/Cover.astro';
+import { getProjects, countBy } from '../../lib/content';
+
+const projects = await getProjects();
+const stacks = countBy(projects, (p) => p.data.stack).map(([s]) => s);
+---
+<BaseLayout title="Projects" description="직접 만들고 운영한 프로젝트와 각 프로젝트의 역할, 아키텍처, 기술적 의사결정을 기록합니다.">
+  <section class="sec page-head" data-projects data-view="grid">
+    <h1 class="h1">Projects<sup>{projects.length}</sup></h1>
+    <p class="lead">직접 만들고 운영한 프로젝트입니다. 각 프로젝트에서 맡은 역할, 아키텍처, 기술적 의사결정과 트러블슈팅을 기록했습니다.</p>
+
+    <div class="bar">
+      <div class="chips" role="group" aria-label="기술 스택 필터">
+        <button type="button" class="fp" aria-pressed="true" data-filter="All">전체</button>
+        {stacks.map((s) => <button type="button" class="fp" aria-pressed="false" data-filter={s}><TechIcon name={s} size={14} />{s}</button>)}
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center; margin-left: auto">
+        <span class="muted" style="font-size: 13px" aria-live="polite" data-count>{projects.length}개</span>
+        <div class="seg" role="group" aria-label="보기 방식">
+          <button type="button" aria-pressed="true" aria-label="그리드 보기" data-view-btn="grid"><Icon name="grid" class="ico-sm" /></button>
+          <button type="button" aria-pressed="false" aria-label="목록 보기" data-view-btn="list"><Icon name="list" class="ico-sm" /></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards pgrid">
+      {projects.map((p) => <ProjectCard project={p} meta />)}
+    </div>
+
+    <div class="rows plist">
+      {
+        projects.map((p) => (
+          <article class="row" data-stack={JSON.stringify(p.data.stack)}>
+            <Cover kind="projects" id={p.id} title={p.data.name} label={p.data.code} small />
+            <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+              <h3><a class="card-link" href={`/projects/${p.id}/`}>{p.data.name}</a> <SampleBadge show={p.data.sample} /></h3>
+              <p class="desc" style="-webkit-line-clamp: 1">{p.data.summary}</p>
+              <div class="techs">{p.data.stack.map((t) => <TechIcon name={t} size={16} />)}</div>
+            </div>
+            <div class="side">
+              <span class="pill">{p.data.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.data.status}</span>
+              <span class="mono">{p.data.period}</span>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+
+    <p class="empty" hidden data-empty>선택한 기술을 사용한 프로젝트가 없습니다.</p>
+  </section>
+</BaseLayout>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-projects]');
+  if (root) {
+    const filterBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+    const viewBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-view-btn]'));
+    const cards = Array.from(root.querySelectorAll<HTMLElement>('.pgrid [data-stack]'));
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('.plist [data-stack]'));
+    const count = root.querySelector<HTMLElement>('[data-count]');
+    const empty = root.querySelector<HTMLElement>('[data-empty]');
+
+    const apply = (filter: string, push = true) => {
+      if (!filterBtns.some((b) => b.dataset.filter === filter)) filter = 'All';
+      filterBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === filter)));
+      let shown = 0;
+      for (const list of [cards, rows]) {
+        shown = 0;
+        list.forEach((el) => {
+          const ok = filter === 'All' || (JSON.parse(el.dataset.stack ?? '[]') as string[]).includes(filter);
+          el.hidden = !ok;
+          if (ok) shown++;
+        });
+      }
+      if (count) count.textContent = `${shown}개`;
+      if (empty) empty.hidden = shown > 0;
+      if (push) {
+        const url = new URL(location.href);
+        filter === 'All' ? url.searchParams.delete('stack') : url.searchParams.set('stack', filter);
+        history.replaceState(null, '', url);
+      }
+    };
+
+    const setView = (view: string) => {
+      if (view !== 'list' && view !== 'grid') view = 'grid';
+      root.dataset.view = view;
+      viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.viewBtn === view)));
+      try {
+        localStorage.setItem('projects-view', view);
+      } catch {}
+    };
+
+    filterBtns.forEach((b) => b.addEventListener('click', () => apply(b.dataset.filter ?? 'All')));
+    viewBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.viewBtn ?? 'grid')));
+
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem('projects-view');
+    } catch {}
+    setView(saved ?? 'grid');
+    apply(new URLSearchParams(location.search).get('stack') ?? 'All', false);
+  }
+</script>

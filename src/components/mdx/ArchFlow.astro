@@ -1,0 +1,32 @@
+---
+/**
+ * 아키텍처 흐름도. MDX 에서:
+ *   <ArchFlow nodes={[{ name: 'content/', desc: 'Markdown · MDX' }, { name: 'GitHub Pages', desc: 'Actions 배포', highlight: true }]} />
+ */
+interface Node {
+  name: string;
+  desc?: string;
+  highlight?: boolean;
+}
+interface Props {
+  nodes: Node[];
+  note?: string;
+}
+const { nodes, note } = Astro.props;
+---
+<figure>
+  <div class="arch" role="img" aria-label={`아키텍처: ${nodes.map((n) => n.name).join(' → ')}`}>
+    {
+      nodes.map((n, i) => (
+        <>
+          {i > 0 && <span class="arr" aria-hidden="true">→</span>}
+          <div class:list={['node', { hi: n.highlight }]}>
+            <b>{n.name}</b>
+            {n.desc && <span>{n.desc}</span>}
+          </div>
+        </>
+      ))
+    }
+  </div>
+  {note && <figcaption class="note">{note}</figcaption>}
+</figure>

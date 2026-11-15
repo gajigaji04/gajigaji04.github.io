@@ -1,0 +1,64 @@
+---
+# ▼ 자리표시용 예시 프로젝트입니다. 실제 내용으로 바꾼 뒤 sample: true 를 지우세요.
+sample: true
+code: P-03
+name: "[프로젝트명]"
+summary: "[해결한 문제 · 담당 역할 · 결과를 한 줄로]"
+role: "팀 프로젝트 · [담당]"
+team: "[n]명"
+period: 20XX.XX — 20XX.XX
+sortDate: 2025-05-01
+stack: [Node.js, Express]
+status: 완료
+kind: "팀 프로젝트"
+featured: true
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+import Adr from '../../components/mdx/Adr.astro';
+import Trouble from '../../components/mdx/Trouble.astro';
+
+## 개요
+
+[프로젝트가 무엇이고 누구를 위한 것인지 2~3문장으로 소개합니다.]
+
+## 문제 정의와 목표
+
+- [ ] [해결하려던 문제 1]
+- [ ] [해결하려던 문제 2]
+- [ ] [측정 가능한 목표]
+
+## 아키텍처
+
+<ArchFlow
+  nodes={[
+    { name: '[클라이언트]', desc: '[기술]' },
+    { name: '[서버 / API]', desc: '[기술]' },
+    { name: '[데이터 저장소]', desc: '[기술]', highlight: true },
+  ]}
+/>
+
+## 주요 기능
+
+- **[기능 1]** — [사용자가 무엇을 할 수 있는지]
+- **[기능 2]** — [사용자가 무엇을 할 수 있는지]
+- **[기능 3]** — [사용자가 무엇을 할 수 있는지]
+
+## 기술적 의사결정
+
+<Adr
+  id="ADR-001"
+  title="[무엇을 무엇으로 결정했는지]"
+  status="채택"
+  open
+  context="[어떤 상황과 제약이 있었는지]"
+  decision="[무엇을 선택했는지, 대안은 무엇이었는지]"
+  consequence="[그 결과 얻은 것과 감수한 것]"
+/>
+
+## 트러블슈팅
+
+<Trouble problem="[무엇이 어떻게 안 됐는지]" cause="[원인을 어떻게 찾았는지]" fix="[해결 방법과 결과 수치]" />
+
+## 회고
+
+[배운 점, 아쉬운 점, 다음에 다르게 할 점을 적습니다.]

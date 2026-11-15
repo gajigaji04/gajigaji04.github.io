@@ -1,223 +1,112 @@
-# plainwhite
+# gajigaji04.github.io
 
-Simplistic jekyll portfolio-style theme for writers.
+웹 개발자 gajigaji04의 포트폴리오 겸 기술 블로그입니다.
+미니멀 디자인(Zinc 무채색 · Geist + Pretendard · 768px 단일 컬럼), 다크/라이트 테마, 정적 검색을 지원합니다.
 
-**Demo**: [samarsault.com](https://samarsault.com)
+- **프레임워크**: [Astro](https://astro.build) 7 (정적 출력) · MDX
+- **폰트**: Geist / Geist Mono (`@fontsource-variable`) + Pretendard — 모두 사이트에 포함(self-host)
+- **기술 아이콘**: [simple-icons](https://simpleicons.org) — 이름만 쓰면 빌드 시 자동 조회
+- **검색**: [Pagefind](https://pagefind.app) — 빌드 후 생성되는 정적 인덱스
+- **배포**: GitHub Actions → GitHub Pages (`.github/workflows/deploy.yml`)
 
-![plainwhite theme preview](/screenshot.png)
+## 문서
 
-## Installation on Github Pages
+| 문서 | 내용 |
+| --- | --- |
+| [docs/CONTENT_GUIDE.md](docs/CONTENT_GUIDE.md) | **프로필 · 프로젝트 · 블로그 추가/수정 방법**, 커밋하면 안 되는 파일 |
+| [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | 디자인 · 코드 · 콘텐츠 · 커밋 메시지 규칙 |
+| [docs/BRANCHING.md](docs/BRANCHING.md) | 브랜치 규칙, Claude 작업 요청 흐름, 기존 브랜치 정리 |
+| [CLAUDE.md](CLAUDE.md) | Claude 가 이 저장소에서 작업할 때 따르는 규칙 |
 
-Add this line to your site's `_config.yml`:
+## 명령어
 
-```yaml
-remote_theme: samarsault/plainwhite-jekyll
-```
+| 명령 | 설명 |
+| --- | --- |
+| `npm install` | 의존성 설치 (Node 22.12 이상) |
+| `npm run dev` | 개발 서버 `http://localhost:4321` — **검색은 동작하지 않음** (인덱스 없음) |
+| `npm run build` | 타입 검사 → `dist/` 빌드 → Pagefind 인덱스 생성 |
+| `npm run preview` | 빌드 결과 미리보기 (검색 포함 전체 기능 확인) |
+| `npm run verify` | `dist/` 검사: 내부 링크·앵커, 레거시 URL 리다이렉트, 필수 산출물, 남은 예시 콘텐츠 |
 
-## Installation
+## 콘텐츠 수정 위치
 
-Add this line to your Jekyll site's `Gemfile`:
+| 내용 | 파일 |
+| --- | --- |
+| 프로필 · About · 기술 스택 · 이력서 PDF 경로 | `src/data/profile.ts` |
+| 블로그 글 | `src/content/blog/YYYY-MM-DD-slug.md` (또는 `.mdx`) |
+| 프로젝트 | `src/content/projects/*.mdx` |
+| 프로필 이미지 | `public/assets/bio-photo.jpg` |
+| 프로젝트 커버 이미지 | `src/assets/covers/projects/<프로젝트 파일명>.png` (파일만 넣으면 적용) |
+| 블로그 썸네일 | `src/assets/covers/blog/<글 slug>.jpg` (파일만 넣으면 적용) |
+| 이력서 PDF | `public/resume.pdf` 에 두고 `profile.ts` 의 `resumeUrl: '/resume.pdf'` |
 
-```ruby
-gem "plainwhite"
-```
+### 예시(자리표시) 콘텐츠 구분
 
-And add this line to your Jekyll site's `_config.yml`:
+실제 내용이 아직 없는 곳은 모두 **예시**로 표시되어 있습니다.
 
-```yaml
-theme: plainwhite
-```
+- 값이 `[대괄호]` 로 감싸져 있고,
+- 데이터에 `sample: true` (기술 스택은 `STACK_IS_SAMPLE = true`) 가 붙어 있으며,
+- 화면에는 점선 테두리의 **예시** 배지가 표시됩니다.
 
-And then execute:
+실제 내용으로 바꾼 뒤 `sample: true` 를 지우면 배지가 사라집니다. `npm run verify` 를 실행하면 남아 있는 예시 항목 목록을 보여 줍니다.
 
-    $ bundle
+### 커버 이미지 · 썸네일
 
-Or install it yourself as:
+이미지가 없으면 제목으로 만든 타이포그래피 커버가 자동으로 표시됩니다. 실제 이미지는 **파일 이름만 맞춰 넣으면** 카드·목록·상세 페이지에 모두 적용되고, 빌드 때 여러 크기의 webp 로 최적화됩니다. 권장 크기 1200×630. 자세한 규칙은 `src/assets/covers/README.md`.
 
-    $ gem install plainwhite
+### 기술 스택 아이콘
 
-## Usage
+`STACK` 목록(`src/data/profile.ts`)과 프로젝트의 `stack` 에는 **기술 이름만** 적으면 됩니다. 예: `'Docker'`, `'Vue.js'`, `'Spring Boot'`.
+빌드할 때 simple-icons 에서 이름으로 로고를 찾아 붙이고, 없는 이름은 텍스트 배지로 표시합니다. 이름이 simple-icons 와 다르면 `src/lib/tech.ts` 의 `ALIASES` 에 한 줄 추가하세요.
 
-The "plainwhite" key in \_config.yml is used to customize the theme data.
-
-```yaml
-plainwhite:
-  name: Adam Denisov
-  tagline: Developer. Designer
-  date_format: "%b %-d, %Y"
-
-  social_links:
-    twitter: samarsault
-    github: samarsault
-    linkedIn: in/samarsault # format: locale/username
-```
-
-**Updating Placeholder Image**
-
-The placeholder portfolio image can be replaced by the desired image by placing it as `assets/portfolio.png` in your jekyll website, or by changing the following line in `_config.yaml`
-
-```yaml
-plainwhite:
-  portfolio_image: "assets/portfolio.png" # the path from the base directory of the site to the image to display (no / at the start)
-```
-
-To use a different image for dark mode, e.g. with different colors that work better in dark mode, add a `portfolio_image_dark` entry in addition to the `portfolio_image`.
+### 블로그 글 frontmatter
 
 ```yaml
-plainwhite:
-  portfolio_image: "assets/portfolio.png"
-  portfolio_image_dark: "assets/portfolio_dark.png"
+---
+title: "글 제목"
+description: "목록과 검색 결과에 보이는 한두 문장 요약"
+date: 2026-11-15T10:00:00+09:00
+category: Dev          # 블로그 목록의 카테고리 탭
+tags: [astro, github-pages]
+# updated: 2026-11-20  # 수정일 (선택)
+# draft: true          # 프로덕션 빌드에서 제외 (선택)
+---
 ```
 
-**Comments (Disqus)**
+URL 은 파일명에서 날짜를 뺀 값입니다: `2026-11-15-hello.md` → `/blog/hello/`.
+코드 블록은 언어 표시·줄 번호·복사 버튼이 자동으로 붙고, 테마에 맞춰 색이 바뀝니다. `>` 인용문은 NOTE 콜아웃 스타일로 표시됩니다.
 
-Comments on posts can be enabled by specifying your disqus_shortname under plainwhite in `_config.yml`. For example,
+### 프로젝트 MDX
 
-```yaml
-plainwhite:
-  disqus_shortname: games
+`src/content/projects/sample-project-02.mdx` 를 복사해 시작하면 됩니다. 본문의 `##` 제목에 자동으로 01, 02… 번호와 목차가 붙습니다. 사용할 수 있는 컴포넌트:
+
+- `<ArchFlow nodes={[{ name, desc, highlight }]} note="..." />` — 아키텍처 흐름도
+- `<Adr id title status open context decision consequence />` — 기술적 의사결정 기록
+- `<Trouble problem cause fix />` — 트러블슈팅
+
+`featured: true` 인 프로젝트가 홈의 Projects 섹션에 최대 4개 노출됩니다. `repo`(GitHub 주소)와 `live`(배포 주소)를 적으면 카드에 링크 아이콘이 나타납니다.
+
+## GitHub 활동 그래프
+
+빌드할 때 `GITHUB_TOKEN` 이 있으면 GitHub GraphQL API 에서 기여 그래프·저장소 수·최장 연속 기여·주 사용 언어를 가져옵니다(Actions 에서는 자동). 토큰이 없거나 요청이 실패하면 고정된 예시 그림을 쓰고 "예시 데이터" 로 표시하며, 빌드는 실패하지 않습니다. 워크플로가 매일 09:00(KST)에 다시 빌드해 갱신합니다.
+
+## 기존(Jekyll) URL 리다이렉트
+
+이전 Jekyll 사이트의 글 주소(`/jekyll/2026/09/15/post-test.html` 등)와 `/about/` 은 새 주소로 이동하는 HTML 이 빌드 때 생성됩니다. 목록은 `src/data/redirects.mjs` 에서 관리합니다. 글을 지우거나 slug 를 바꾸면 이 파일도 함께 고쳐 주세요 — `npm run verify` 가 대상이 없는 리다이렉트를 잡아냅니다.
+
+## 구조
+
 ```
-
-**Google Analytics**
-
-It can be enabled by specifying your analytics id under plainwhite in `_config.yml`
-
-```yaml
-plainwhite:
-  analytics_id: "< YOUR ID >"
+src/
+  content/           블로그(md) · 프로젝트(mdx)
+  content.config.ts  콘텐츠 스키마
+  data/              프로필 · 리다이렉트 목록
+  assets/covers/     프로젝트 · 블로그 커버 이미지 (선택)
+  components/        Header, Footer, SearchDialog, Cover, TechIcon, ProjectCard, PostCard, mdx/*
+  layouts/           BaseLayout (메타 태그, 테마 초기화)
+  lib/               콘텐츠 헬퍼, GitHub API, 기술 아이콘 조회
+  pages/             라우트 (+ rss.xml, sitemap.xml, robots.txt)
+  styles/global.css  디자인 토큰과 전체 스타일
+integrations/        레거시 리다이렉트 생성 Astro 통합
+scripts/             dist 검증 스크립트
 ```
-
-**Sitemap**
-
-It can be toggled by the following line to under plainwhite in `_config.yml`
-
-```yaml
-plainwhite:
-  sitemap: true
-```
-
-**Excerpts**
-
-Excerpts can be enabled by adding the following line to your `_config.yml`
-
-```yaml
-show_excerpts: true
-```
-
-**Layouts**
-
-- Home
-- Page
-- Post
-
-**Navigation**
-
-Navigation can be enabled by adding the following line to your `_config.yml`
-
-```yaml
-plainwhite:
-  navigation:
-    - title: My Work
-      url: "/my-work"
-    - title: Resume
-      url: "/resume"
-```
-
-**Mobile**
-
-By default, Plainwhite places the sidebar (logo, name, tagline etc.) above the content on mobile (narrow screens).
-To condense it (moving some things to the bottom of the page and making the rest smaller) so it takes up less space, add the following to your `_config.yml`:
-
-```yaml
-plainwhite:
-  condensed_mobile:
-    - home
-    - post
-    - page
-```
-
-This chooses which layouts (types of page) should be condensed on mobile screens. E.g. if you want everything but the landing page to be condensed, remove `home` from the list. This option does not affect rendering on wider screens.
-
-**Dark mode**
-
-Dark mode can be enabled by setting the `dark_mode` flag in your `_config.yml`
-
-The website will check the OS preferred color scheme and set the theme accordingly, the preference will then be saved in a cookie
-
-```yaml
-plainwhite:
-  dark_mode: true
-```
-
-![plainwhite dark theme previe](/dark.png)
-
-**Multiline tagline**
-
-Tagline can be multiline in this way
-
-```yaml
-plainwhite:
-  tagline: |
-  First Line.
-
-  Second Line.
-
-  Third Line.
-```
-
-**Search-bar**
-
-Search-bar can be enabled by adding the following line to `config.yml`
-
-```yaml
-plainwhite:
-  search: true
-```
-
-Search is powered by [Simple-Jekyll-Search](https://github.com/christian-fei/Simple-Jekyll-Search) Jekyll plugin. A `search.json` containing post meta and contents will be generated in site root folder. Plugin JavaScript will then match for posts based on user input. More info and `search.json` customization documentation can be found in plugin repository.
-
-**Base URL**
-
-You can specify a custom base URL (eg. example.com/blog/) by adding the following line to `_config.yaml`. Note that there is no trailing slash on the URL.
-
-```yaml
-baseurl: "/blog"
-```
-
-**Language**
-
-You can set the `lang` attribute of the `<html>` tag on your pages by changing the following line in `_config.yml`:
-
-```yaml
-plainwhite:
-  html_lang: "en"
-```
-
-[See here for a full list of available language codes](https://www.w3schools.com/tags/ref_country_codes.asp)
-
-## Contributing
-
-Bug reports and pull requests are welcome on GitHub at https://github.com/samarsault/plainwhite-jekyll. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
-
-## Development
-
-To set up your environment to develop this theme, run `bundle install`.
-
-Your theme is setup just like a normal Jekyll site! To test your theme, run `bundle exec jekyll serve` and open your browser at `http://localhost:4000`. This starts a Jekyll server using your theme. Add pages, documents, data, etc. like normal to test your theme's contents. As you make modifications to your theme and to your content, your site will regenerate and you should see the changes in the browser after a refresh, just like normal.
-
-When your theme is released, only the files in `_layouts`, `_includes`, `_sass` and `assets` tracked with Git will be bundled.
-To add a custom directory to your theme-gem, please edit the regexp in `plainwhite.gemspec` accordingly.
-
-## Donation
-
-If this project help you reduce time to develop, you can give me a cup of coffee :)
-
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://paypal.me/thelehhman)
-
-## License
-
-The theme is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## More themes
-
-- [Texture](https://github.com/samarsault/texture)

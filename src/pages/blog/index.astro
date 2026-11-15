@@ -1,0 +1,99 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPosts, countBy, slugifyTag } from '../../lib/content';
+
+const posts = await getPosts();
+const cats = countBy(posts, (p) => [p.data.category]);
+const tags = countBy(posts, (p) => p.data.tags.map(slugifyTag)).map(([t]) => t);
+---
+<BaseLayout title="Blog" description="개발하면서 배우고 고민한 것을 기록합니다.">
+  <section class="sec page-head" data-blog>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+      <div>
+        <h1 class="h1">Blog<sup>{posts.length}</sup></h1>
+        <p class="lead">개발하면서 배우고 고민한 것을 기록합니다.</p>
+      </div>
+      <a href="/rss.xml" class="muted" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px"><Icon name="rss" class="ico-xs" />RSS</a>
+    </div>
+
+    <label class="srch" style="margin-top: 28px">
+      <Icon name="search" class="ico-sm" />
+      <span class="sr-only">글 검색</span>
+      <input type="search" placeholder="제목, 내용, 태그로 검색" autocomplete="off" data-local-search data-q />
+      <span class="kbd">/</span>
+    </label>
+
+    <div class="bar" style="margin: 16px 0 0">
+      <div class="chips" role="group" aria-label="카테고리">
+        <button type="button" class="fp" aria-pressed="true" data-cat-btn="All">전체<span class="n">{posts.length}</span></button>
+        {cats.map(([c, n]) => <button type="button" class="fp" aria-pressed="false" data-cat-btn={c}>{c}<span class="n">{n}</span></button>)}
+      </div>
+    </div>
+    <div class="tagrow" role="group" aria-label="태그">
+      {tags.map((t) => <button type="button" class="tg" aria-pressed="false" data-tag={t}>#{t}</button>)}
+    </div>
+
+    <div class="cards">
+      {posts.map((p) => <PostCard post={p} full />)}
+    </div>
+    <p class="empty" hidden data-empty></p>
+  </section>
+</BaseLayout>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-blog]');
+  if (root) {
+    const q = root.querySelector<HTMLInputElement>('[data-q]')!;
+    const catBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cat-btn]'));
+    const tagBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tag]'));
+    const posts = Array.from(root.querySelectorAll<HTMLElement>('[data-post]'));
+    const empty = root.querySelector<HTMLElement>('[data-empty]')!;
+    const state = { q: '', cat: 'All', tag: '' };
+
+    const render = () => {
+      const terms = state.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      let shown = 0;
+      for (const el of posts) {
+        const tags: string[] = JSON.parse(el.dataset.tags ?? '[]');
+        const hay = `${el.dataset.text ?? ''} ${el.dataset.date ?? ''}`;
+        const ok =
+          (state.cat === 'All' || el.dataset.cat === state.cat) &&
+          (!state.tag || tags.includes(state.tag)) &&
+          terms.every((t) => hay.includes(t));
+        el.hidden = !ok;
+        if (ok) shown++;
+      }
+      catBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.catBtn === state.cat)));
+      tagBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tag === state.tag)));
+      empty.hidden = shown > 0;
+      empty.textContent = state.q ? `"${state.q}"에 맞는 글이 없습니다. 다른 검색어나 카테고리를 선택해 보세요.` : '조건에 맞는 글이 없습니다.';
+
+      const url = new URL(location.href);
+      for (const [k, v] of Object.entries({ q: state.q, cat: state.cat === 'All' ? '' : state.cat, tag: state.tag })) {
+        v ? url.searchParams.set(k, v) : url.searchParams.delete(k);
+      }
+      history.replaceState(null, '', url);
+    };
+
+    const params = new URLSearchParams(location.search);
+    state.q = params.get('q') ?? '';
+    state.cat = catBtns.some((b) => b.dataset.catBtn === params.get('cat')) ? params.get('cat')! : 'All';
+    state.tag = params.get('tag') ?? '';
+    q.value = state.q;
+
+    q.addEventListener('input', () => ((state.q = q.value), render()));
+    q.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') (q.value = ''), (state.q = ''), render(), q.blur();
+    });
+    catBtns.forEach((b) => b.addEventListener('click', () => ((state.cat = b.dataset.catBtn ?? 'All'), render())));
+    tagBtns.forEach((b) =>
+      b.addEventListener('click', () => {
+        state.tag = state.tag === b.dataset.tag ? '' : (b.dataset.tag ?? '');
+        render();
+      }),
+    );
+    render();
+  }
+</script>

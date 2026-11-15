@@ -1,0 +1,53 @@
+---
+/**
+ * 프로젝트 · 블로그 카드의 커버 이미지 (1200×630 비율).
+ *
+ * 이미지 교체 방법 — 코드 수정 없이 파일만 넣으면 됩니다:
+ *   src/assets/covers/projects/<프로젝트 파일명>.(png|jpg|jpeg|webp|avif)
+ *   src/assets/covers/blog/<글 slug>.(png|jpg|jpeg|webp|avif)
+ * 예: src/content/projects/gajigaji04-github-io.mdx → src/assets/covers/projects/gajigaji04-github-io.png
+ *     /blog/post-test/ → src/assets/covers/blog/post-test.jpg
+ *
+ * 이미지가 없으면 제목으로 만든 타이포그래피 커버를 표시합니다.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  kind: 'projects' | 'blog';
+  id: string;
+  title: string;
+  /** 커버 왼쪽 위 작은 라벨 (P-01, 카테고리 등) */
+  label?: string;
+  /** 목록 보기 등 작은 크기 */
+  small?: boolean;
+  /** 상세 페이지 상단처럼 우선 로드 */
+  eager?: boolean;
+  /** 실제 이미지가 있을 때만 표시 (타이포 커버 생략) */
+  imageOnly?: boolean;
+}
+const { kind, id, title, label, small = false, eager = false, imageOnly = false } = Astro.props;
+
+const files = import.meta.glob<{ default: ImageMetadata }>('../assets/covers/**/*.{png,jpg,jpeg,webp,avif}');
+const key = Object.keys(files).find((p) => p.replace(/\.[a-z]+$/, '').endsWith(`/covers/${kind}/${id}`));
+const img = key ? (await files[key]()).default : undefined;
+---
+{(img || !imageOnly) && (<div class:list={['cover', { 'cover-sm': small, 'cover-img': img, 'cover-hero': eager }]}>
+  {
+    img ? (
+      <Image
+        src={img}
+        alt={`${title} 커버 이미지`}
+        widths={small ? [240, 480] : [480, 768, 1200]}
+        sizes={small ? '168px' : eager ? '(max-width: 768px) 100vw, 736px' : '(max-width: 720px) 100vw, 376px'}
+        loading={eager ? 'eager' : 'lazy'}
+      />
+    ) : (
+      <>
+        {label && <span class="cover-k">{label}</span>}
+        <span class="cover-t" aria-hidden="true">{title}</span>
+      </>
+    )
+  }
+</div>
+)}
