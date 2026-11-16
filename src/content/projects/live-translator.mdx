@@ -1,0 +1,51 @@
+---
+code: P-05
+name: Live Translator
+summary: 마이크 음성을 실시간으로 인식해 여러 언어로 동시에 번역하고, WebSocket 과 OBS 자막용 텍스트 파일로 내보내는 Python 비동기 파이프라인.
+role: 개인 프로젝트 · 설계 · 개발
+team: 1명
+period: 2026.09 — 진행 중
+sortDate: 2026-09-16
+stack: [Python, faster-whisper, asyncio, WebSocket, DeepL, OpenAI API]
+status: 진행 중
+kind: 개인 프로젝트 · 로컬 실행형
+repo: https://github.com/gajigaji-dev/Live-Translator-Real-time-Multilingual-Subtitles
+order: 5
+featured: false
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+
+## Overview
+
+라이브 방송이나 애플리케이션에서 말하는 내용을 **실시간 다국어 자막**으로 보여 주기 위한 음성 인식 · 번역 시스템입니다.
+한국어 · 영어 · 일본어 · 중국어를 대상으로 하며, 입력 언어는 자동으로 감지합니다.
+
+## 주요 기능
+
+- **마이크 입력** — 16kHz mono, 100ms 단위로 수집
+- **발화 구간 감지(VAD)** — RMS 임계값으로 음성 여부를 판단하고, 400ms 이상 침묵하면 한 발화로 끊으며 250ms 미만은 버림
+- **음성 인식** — faster-whisper(기본 small 모델, CPU · int8), 입력 언어 자동 감지
+- **다국어 동시 번역** — DeepL API 또는 OpenAI API, 입력과 같은 언어는 번역 생략
+- **출력** — WebSocket 브로드캐스트(`localhost:8765`)와 OBS 자막용 텍스트 파일
+
+## Technical Details
+
+- **생산자-소비자 파이프라인** — 마이크 → `audio_queue` → STT Worker → `result_queue` → 번역 · 출력의 3단계를 asyncio Task 로 분리했습니다. 하나의 루프에서 처리하면 Whisper 추론 · 번역 중에 마이크 입력이 밀리기 때문입니다.
+- **스레드 경계 처리** — 오디오 콜백(별도 스레드)에서는 `loop.call_soon_threadsafe` 로 큐에 넣고, Whisper 추론과 파일 쓰기는 `asyncio.to_thread` 로 빼서 이벤트 루프를 막지 않습니다.
+- **Backpressure** — 큐 크기를 제한하고(오디오 100 · 결과 20), 가득 차면 오래된 처리를 기다리지 않고 새 청크를 버립니다.
+- **부분 실패 허용** — 여러 언어를 `asyncio.gather(..., return_exceptions=True)` 로 동시에 번역해, 한 언어가 실패해도 나머지 자막은 계속 나갑니다.
+- **외부 API 직접 호출** — aiohttp 로 DeepL · OpenAI 를 호출하고 10초 타임아웃을 둡니다.
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'Microphone', desc: 'sounddevice' },
+    { name: 'STT Worker', desc: 'VAD → faster-whisper', highlight: true },
+    { name: 'Translator', desc: 'DeepL · OpenAI 병렬' },
+    { name: 'Output', desc: 'WebSocket · TXT' },
+  ]}
+  note="각 단계는 asyncio Queue 로 연결된 독립 Task 입니다."
+/>
+
+남은 과제: 웹 오버레이(`web/index.html`)가 서버 메시지 형식(`source_text` · `translations`)을 읽도록 맞추는 작업, VAD 설정값을 환경 변수로 분리하는 작업, 테스트 작성.

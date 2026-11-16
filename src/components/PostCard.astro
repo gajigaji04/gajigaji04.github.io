@@ -1,0 +1,38 @@
+---
+import Cover from './Cover.astro';
+import SampleBadge from './SampleBadge.astro';
+import { readingMinutes, slugifyTag, dotDate, type Post } from '../lib/content';
+
+interface Props {
+  post: Post;
+  /** 요약·태그까지 표시 (블로그 목록) */
+  full?: boolean;
+}
+const { post, full = false } = Astro.props;
+const d = post.data;
+// 최근 30일 안에 쓴 글은 New 표시
+const isNew = Date.now() - d.date.valueOf() < 30 * 864e5;
+const tags = d.tags.map(slugifyTag);
+---
+<article
+  class="card"
+  data-post
+  data-cat={d.category}
+  data-tags={JSON.stringify(tags)}
+  data-date={dotDate(d.date)}
+  data-text={full ? `${d.title} ${d.description} ${d.tags.join(' ')} ${d.category} ${(post.body ?? '').slice(0, 4000)}`.toLowerCase() : undefined}
+>
+  <Cover kind="blog" id={post.id} title={d.title} label={d.category} />
+  <div class="cbody" style="gap: 6px">
+    <h3>
+      <a class="card-link" href={`/blog/${post.id}/`}>{d.title}</a>
+      {isNew && <span class="new" title="새 글"><span class="sr-only">새 글</span></span>}
+      <SampleBadge show={d.sample} />
+    </h3>
+    {full && <p class="desc">{d.description}</p>}
+    <p class="cmeta">
+      <time datetime={d.date.toISOString()}>{dotDate(d.date)}</time><span aria-hidden="true">·</span><span>{readingMinutes(post.body)}분</span>
+      {full && tags.map((t) => <span class="mono" style="font-size: 12px">#{t}</span>)}
+    </p>
+  </div>
+</article>

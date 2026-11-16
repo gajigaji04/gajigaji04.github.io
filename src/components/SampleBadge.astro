@@ -1,0 +1,8 @@
+---
+/** 자리표시용 예시 콘텐츠 표시. `show` 가 false 면 아무것도 렌더링하지 않습니다. */
+interface Props {
+  show?: boolean;
+}
+const { show = true } = Astro.props;
+---
+{show && <span class="sample" title="자리표시용 예시 콘텐츠 — 실제 내용으로 교체 예정" data-pagefind-ignore>예시</span>}

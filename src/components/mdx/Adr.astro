@@ -1,0 +1,37 @@
+---
+/**
+ * 기술적 의사결정 기록(ADR). MDX 에서:
+ *   <Adr id="ADR-001" title="..." status="채택" open context="..." decision="..." consequence="..." />
+ */
+interface Props {
+  id: string;
+  title: string;
+  status?: '제안' | '채택' | '대체됨' | '폐기';
+  open?: boolean;
+  context?: string;
+  decision?: string;
+  consequence?: string;
+}
+const { id, title, status = '제안', open = false, context, decision, consequence } = Astro.props;
+const tagClass = status === '채택' ? 'tag done' : status === '제안' ? 'tag' : 'tag old';
+const rows = [
+  ['맥락', context],
+  ['결정', decision],
+  ['결과', consequence],
+].filter((r): r is [string, string] => Boolean(r[1]));
+---
+<details class="adr" open={open}>
+  <summary><span class="id">{id}</span><span class="tt">{title}</span><span class={tagClass}>{status}</span></summary>
+  {
+    rows.length > 0 && (
+      <dl class="grid">
+        {rows.map(([k, v]) => (
+          <>
+            <dt class="lbl">{k}</dt>
+            <dd>{v}</dd>
+          </>
+        ))}
+      </dl>
+    )
+  }
+</details>

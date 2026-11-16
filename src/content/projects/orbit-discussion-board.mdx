@@ -1,0 +1,48 @@
+---
+code: P-09
+name: Orbit Threaded Discussion Board
+summary: 게시글 · 댓글 CRUD 와 회원 관리를 갖춘 React + Express + MySQL 커뮤니티 게시판. 2023년에 처음 만들고 2026년에 다시 정비하고 있습니다.
+role: 개인 프로젝트 · 풀스택
+team: 1명
+period: 2023.11 — 진행 중
+sortDate: 2026-10-17
+stack: [JavaScript, React, Express, MySQL, styled-components]
+status: 진행 중
+kind: 개인 프로젝트
+repo: https://github.com/gajigaji04/Orbit-threaded-discussion-board
+order: 9
+featured: false
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+
+## Overview
+
+React 클라이언트와 Express REST API, MySQL 로 구성한 커뮤니티형 게시판입니다.
+2023년 11–12월에 처음 개발했고, 2026년 10월에 MySQL 연결 · 디자인 · 문서를 다시 정비했습니다.
+
+## 주요 기능
+
+- **게시글** — 작성 · 조회 · 수정 · 삭제
+- **댓글** — 작성 · 조회 · 삭제
+- **회원** — 가입 · 조회 · 수정 · 삭제, bcrypt 비밀번호 해싱
+- **페이지** — 홈, 게시글 목록 · 상세, 소개, 문의
+
+## Technical Details
+
+- **공통 에러 처리** — 잘못된 JSON 은 400, 중복 키(`ER_DUP_ENTRY`)는 409 로 응답하는 공통 에러 핸들러와 `asyncHandler` 래퍼
+- **DB 초기화** — 서버 시작 시 데이터베이스와 테이블을 자동 생성(`schema.sql`)
+- **보안 미들웨어** — helmet, cors, mysql2 커넥션 풀
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'React (CRA)', desc: 'React Router · axios' },
+    { name: 'Express', desc: 'routes → controllers', highlight: true },
+    { name: 'models', desc: 'mysql2 커넥션 풀' },
+    { name: 'MySQL', desc: 'posts · comments · users' },
+  ]}
+  note="Express 가 빌드된 클라이언트를 정적 파일로 서빙하고, 그 외 경로는 SPA 로 넘깁니다."
+/>
+
+남은 과제: 대댓글(스레드) 구조, 게시글 · 댓글의 작성자 연결, 로그인(JWT).

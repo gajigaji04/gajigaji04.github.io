@@ -1,0 +1,79 @@
+---
+import Icon from './Icon.astro';
+import TechIcon from './TechIcon.astro';
+import { PROFILE } from '../data/profile';
+
+const NAV = [
+  { href: '/', label: 'Home' },
+  { href: '/projects/', label: 'Projects' },
+  { href: '/blog/', label: 'Blog' },
+];
+const path = Astro.url.pathname.replace(/\/?$/, '/');
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+---
+<header class="hdr" data-hdr>
+  <div class="col">
+    <a class="logo" href="/" aria-label={`${PROFILE.handle} 홈`}>g</a>
+    <nav class="nav" aria-label="주요 메뉴">
+      {NAV.map((n) => <a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a>)}
+    </nav>
+    <div class="tools">
+      <button class="sbtn" type="button" data-search-open aria-label="사이트 검색 (Ctrl+K)" aria-haspopup="dialog">
+        <Icon name="search" class="ico-sm" /><span class="t">검색…</span><span class="kbd" data-mod-key>Ctrl K</span>
+      </button>
+      <a class="ib" href={`https://github.com/${PROFILE.github}`} aria-label="GitHub 프로필"><TechIcon name="GitHub" size={18} /></a>
+      <button class="ib theme-toggle" type="button" data-theme-toggle aria-label="다크/라이트 테마 전환">
+        <Icon name="sun" class="i-sun" /><Icon name="moon" class="i-moon" />
+      </button>
+      <button class="ib menu-btn" type="button" data-menu aria-label="메뉴 열기" aria-expanded="false" aria-controls="mnav">
+        <Icon name="menu" />
+      </button>
+    </div>
+  </div>
+  <nav class="mnav" id="mnav" aria-label="모바일 메뉴">
+    {NAV.map((n) => <a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a>)}
+  </nav>
+</header>
+
+<script>
+  const root = document.documentElement;
+  const btn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const sync = () => {
+    const dark = root.dataset.theme === 'dark';
+    btn?.setAttribute('aria-pressed', String(dark));
+    btn?.setAttribute('title', dark ? '라이트 테마로 전환' : '다크 테마로 전환');
+  };
+  sync();
+  btn?.addEventListener('click', () => {
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    try {
+      localStorage.setItem('theme', next);
+    } catch {}
+    sync();
+  });
+  // 저장된 선택이 없으면 OS 설정 변경을 따라감
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    let stored: string | null = null;
+    try {
+      stored = localStorage.getItem('theme');
+    } catch {}
+    if (!stored) {
+      root.dataset.theme = e.matches ? 'dark' : 'light';
+      sync();
+    }
+  });
+  if (/Mac|iPhone|iPad/.test(navigator.platform)) {
+    document.querySelectorAll('[data-mod-key]').forEach((el) => (el.textContent = '⌘K'));
+  }
+
+  // 모바일 메뉴
+  const hdr = document.querySelector<HTMLElement>('[data-hdr]');
+  const menu = document.querySelector<HTMLButtonElement>('[data-menu]');
+  menu?.addEventListener('click', () => {
+    const open = !hdr?.classList.contains('open');
+    hdr?.classList.toggle('open', open);
+    menu.setAttribute('aria-expanded', String(open));
+    menu.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+  });
+</script>

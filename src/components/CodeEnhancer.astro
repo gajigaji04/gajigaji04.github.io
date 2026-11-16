@@ -1,0 +1,59 @@
+---
+/**
+ * Shiki 코드 블록에 언어 표시 + 복사 버튼 바를 붙이고,
+ * 목차(.toc a[href^="#"]) 의 현재 위치를 강조합니다.
+ */
+---
+<script>
+  const COPY =
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+  const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>';
+
+  document.querySelectorAll<HTMLPreElement>('pre.astro-code').forEach((pre) => {
+    if (pre.parentElement?.classList.contains('cb')) return;
+    const lang = pre.dataset.language ?? '';
+    const wrap = document.createElement('figure');
+    wrap.className = 'cb';
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.innerHTML = `<span class="lang"></span><button type="button" class="cp" aria-label="코드 복사">${COPY}<span>copy</span></button>`;
+    bar.querySelector('.lang')!.textContent = lang === 'plaintext' ? 'text' : lang;
+    pre.replaceWith(wrap);
+    wrap.append(bar, pre);
+
+    const btn = bar.querySelector<HTMLButtonElement>('.cp')!;
+    let timer: number | undefined;
+    btn.addEventListener('click', async () => {
+      const text = Array.from(pre.querySelectorAll('.line'))
+        .map((l) => l.textContent ?? '')
+        .join('\n');
+      try {
+        await navigator.clipboard.writeText(text || pre.innerText);
+        btn.innerHTML = `${CHECK}<span>copied</span>`;
+        btn.classList.add('done');
+      } catch {
+        btn.querySelector('span')!.textContent = 'failed';
+      }
+      clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        btn.innerHTML = `${COPY}<span>copy</span>`;
+        btn.classList.remove('done');
+      }, 1600);
+    });
+  });
+
+  // 목차 활성 표시
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('.toc a[href^="#"]'));
+  const targets = links
+    .map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))))
+    .filter((el): el is HTMLElement => !!el);
+  if (targets.length) {
+    const setActive = () => {
+      let current = targets[0];
+      for (const t of targets) if (t.getBoundingClientRect().top < 120) current = t;
+      links.forEach((a) => a.classList.toggle('on', decodeURIComponent(a.hash.slice(1)) === current.id));
+    };
+    setActive();
+    addEventListener('scroll', setActive, { passive: true });
+  }
+</script>

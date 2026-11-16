@@ -1,0 +1,87 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import TechIcon from '../../components/TechIcon.astro';
+import SampleBadge from '../../components/SampleBadge.astro';
+import Cover from '../../components/Cover.astro';
+import CodeEnhancer from '../../components/CodeEnhancer.astro';
+import { getProjects, ymd, type Project } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const all = await getProjects();
+  return all.map((project, i) => ({
+    params: { slug: project.id },
+    props: { project, prev: all[i - 1] as Project | undefined, next: all[i + 1] as Project | undefined },
+  }));
+}
+
+interface Props {
+  project: Project;
+  prev?: Project;
+  next?: Project;
+}
+const { project, prev, next } = Astro.props;
+const p = project.data;
+const { Content, headings } = await render(project);
+const sections = headings.filter((h) => h.depth === 2);
+---
+<BaseLayout title={p.name} description={p.summary}>
+  <article class="sec page-head" data-pagefind-body data-pagefind-meta="kind:project">
+    <a class="crumb" href="/projects/" data-pagefind-ignore><Icon name="arrowLeft" class="ico-xs" />Projects</a>
+
+    <Cover kind="projects" id={project.id} title={p.name} label={p.code} eager />
+
+    <header class="dhead" style="margin-top: 28px">
+      <div class="meta">
+        <span class="pill">{p.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.status}</span>
+        {p.release && <span class="pill">{p.release.version} 릴리스</span>}
+        <span>{p.kind}</span>
+        <SampleBadge show={p.sample} />
+      </div>
+      <h1 data-pagefind-meta="title">{p.name}</h1>
+      <p class="sum">{p.summary}</p>
+      {
+        (p.live || p.repo || p.release) && (
+          <div class="cta" style="margin-top: 8px">
+            {p.release && <a class="btn pri" href={p.release.url}><Icon name="download" class="ico-sm" />{p.release.version} 릴리스 받기</a>}
+            {p.live && <a class:list={['btn', { pri: !p.release }]} href={p.live}><Icon name="globe" class="ico-sm" />사이트 보기</a>}
+            {p.repo && <a class="btn" href={p.repo}><TechIcon name="GitHub" size={15} />GitHub</a>}
+          </div>
+        )
+      }
+    </header>
+
+    <dl class="facts">
+      <div><dt>역할</dt><dd>{p.role}</dd></div>
+      <div><dt>기간</dt><dd>{p.period}</dd></div>
+      <div><dt>인원</dt><dd>{p.team}</dd></div>
+      {p.deploy && <div><dt>배포</dt><dd>{p.deploy}</dd></div>}
+      {p.release && <div><dt>최신 릴리스</dt><dd><a href={p.release.url}>{p.release.version}</a>{p.release.date && ` · ${ymd(p.release.date)}`}</dd></div>}
+      <div style="grid-column: 1 / -1"><dt>기술 스택</dt><dd class="techs" style="color: var(--fg); gap: 14px">{p.stack.map((t) => <TechIcon name={t} size={16} label />)}</dd></div>
+    </dl>
+
+    {
+      sections.length > 1 && (
+        <details class="toc" open data-pagefind-ignore>
+          <summary>On this page <Icon name="chevron" class="ico-sm chev" /></summary>
+          <ol>
+            {sections.map((h, i) => (
+              <li><a href={`#${h.slug}`}><span class="n">{String(i + 1).padStart(2, '0')}</span>{h.text}</a></li>
+            ))}
+          </ol>
+        </details>
+      )
+    }
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <nav class="pnav" aria-label="이전/다음 프로젝트" data-pagefind-ignore>
+      {prev ? <a href={`/projects/${prev.id}/`}><span class="l">← 이전 프로젝트</span><span class="t">{prev.data.name}</span></a> : <a href="/projects/"><span class="l">← 목록</span><span class="t">모든 프로젝트</span></a>}
+      {next && <a class="next" href={`/projects/${next.id}/`}><span class="l">다음 프로젝트 →</span><span class="t">{next.data.name}</span></a>}
+    </nav>
+  </article>
+  <CodeEnhancer />
+</BaseLayout>

@@ -1,0 +1,26 @@
+---
+/** 기술 이름 하나를 단색 로고로 표시. 아이콘이 없으면 이름 배지. */
+import { techIcon } from '../lib/tech';
+
+interface Props {
+  name: string;
+  size?: number;
+  /** 아이콘 옆에 이름도 표시 */
+  label?: boolean;
+  class?: string;
+}
+const { name, size = 20, label = false, class: cls } = Astro.props;
+const icon = techIcon(name);
+---
+{
+  icon.path ? (
+    <span class:list={['tech', cls]} title={icon.title}>
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" role="img" aria-label={icon.title}>
+        <path d={icon.path} />
+      </svg>
+      {label && <span>{icon.title}</span>}
+    </span>
+  ) : (
+    <span class:list={['tech tech-text', cls]} title={icon.title}>{icon.title}</span>
+  )
+}

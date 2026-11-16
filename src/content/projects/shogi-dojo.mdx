@@ -1,0 +1,79 @@
+---
+code: P-04
+name: Shogi Dojo
+summary: 규칙 학습부터 CPU · 온라인 대전, 기보 복기까지 하나로 묶은 쇼기 웹 서비스. 클라이언트와 서버가 같은 순수 TypeScript 규칙 엔진으로 수를 검증합니다.
+role: 개인 프로젝트 · 기획 · 프론트엔드 · 백엔드
+team: 1명
+period: 2026.08 — 2026.08
+sortDate: 2026-08-12
+stack: [TypeScript, React, Vite, Node.js, Express, Prisma, PostgreSQL, Vitest, Vercel]
+status: 완료
+kind: 개인 프로젝트
+deploy: Vercel (서버리스 함수)
+repo: https://github.com/gajigaji04/Shogi_Dojo
+order: 4
+featured: true
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+import Trouble from '../../components/mdx/Trouble.astro';
+
+## Overview
+
+일본 장기(쇼기) 초심자가 **규칙을 배우고 → 연습하고 → 컴퓨터 · 온라인으로 대전하고 → 대국을 복기**하는 흐름을 하나의 서비스로 묶었습니다.
+打ち歩詰め(드롭한 보병으로 외통), 連続王手の千日手(연속 왕수 반복) 같은 예외 규칙까지 정확히 구현하는 것을 도메인 로직 연습의 목표로 삼았습니다.
+
+## 주요 기능
+
+- **규칙 엔진** — 기물 이동, 승격 가능/강제 조건, 드롭 제약(二歩 · 行き所のない駒 · 打ち歩詰め), 자충수 방지, 千日手 · 연속왕수 반칙패
+- **CPU 대전 5단계** — 입문(랜덤 합법수)부터 easy / normal / hard / expert(탐색 시간 120 / 350 / 700 / 1400ms)
+- **온라인 대전** — 매칭 대기열, Elo 레이팅, 90초 무응답 시 승리 청구, 새로고침 후 진행 중 대국 재접속
+- **기보** — 일본식 표기 생성, KIF 파일 불러오기(Shift-JIS 우선 디코딩 후 UTF-8 폴백), 복기 뷰어
+- **학습 · 튜토리얼**, 회원 가입 · 로그인(JWT), 비밀번호 재설정 메일, 공지 · 문의, 한국어 · 일본어 · 영어
+
+## Technical Details
+
+- **CPU 탐색**: Negamax + 알파-베타 가지치기 + iterative deepening(최대 depth 5). 고정 깊이 대신 **시간 예산**으로 탐색을 끊고(`SearchTimeout`), 잡는 수 · 승격 수를 먼저 보도록 수 순서를 정렬합니다.
+- **평가 함수**: 기물 가치, 持ち駒(잡은 기물) 가치, 왕 주변 아군/적 수, 보병 전진도.
+- **千日手 판정**: 판 · 지패 · 차례로 국면 키를 만들어 같은 국면 4회 반복을 감지하고, 반복 구간 동안 계속 왕수를 건 쪽을 반칙패로 처리합니다.
+- **동시 매칭 처리**: 대기열 참가 시 PostgreSQL `pg_advisory_xact_lock` 으로 동시 요청을 직렬화하고, 대국 종료와 레이팅 갱신을 같은 트랜잭션에서 처리합니다.
+- **레이팅 기반 매칭**: 허용 레이팅 차가 기본 100에서 대기 시간 1초마다 15씩 넓어져 최대 600까지 커집니다(Elo, K=32).
+- **비밀번호 재설정 토큰**은 SHA-256 해시로만 저장하고, 메일은 Resend 로 발송합니다(API 키가 없으면 콘솔 출력).
+- **테스트**: 규칙 엔진에 Vitest 테스트 73개(9개 파일).
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'React SPA', desc: '로컬 · 온라인 대전 공통 보드' },
+    { name: 'src/game', desc: '순수 TS 규칙 엔진 · AI', highlight: true },
+    { name: 'Express API', desc: 'Vercel 서버리스 함수 1개' },
+    { name: 'PostgreSQL', desc: 'Prisma · 국면 · 수순 · 대기열' },
+  ]}
+  note="서버는 클라이언트와 같은 gameReducer 를 import 해 수를 재검증합니다. 온라인 동기화는 HTTP 폴링(대기열 1.2초 · 대국 0.9초)."
+/>
+
+- 규칙 엔진 `src/game/` 은 React · Express 어디에도 의존하지 않는 순수 TypeScript 이고, 게임 상태는 리듀서 패턴으로 다룹니다.
+- 로컬 대전 훅과 온라인 대전 훅이 **같은 컨트롤러 인터페이스**를 반환해, 보드 컴포넌트 하나를 두 모드가 함께 씁니다.
+- 서버리스 환경에서 상태를 유지하기 위해 현재 국면(`Game.stateJson`), 수순(`GameMove`), 매칭 대기열(`MatchQueue`)을 모두 DB 에 둡니다.
+
+## Trouble Shooting
+
+<Trouble
+  problem="Vercel 에 배포한 API 가 중첩 경로에서 404 를 반환하고, 일부 요청은 ERR_MODULE_NOT_FOUND 로 실패했습니다."
+  cause="catch-all 파일(api/[...path].ts)이 중첩 경로를 받지 못했고, Node ESM 런타임에서는 상대 import 에 .js 확장자가 필요했습니다."
+  fix="Express 앱 전체를 api/index.ts 하나로 감싸고 rewrite 로 모든 경로를 넘기도록 바꿨으며, 상대 import 에 확장자를 붙였습니다."
+/>
+
+<Trouble
+  problem="千日手 테스트가 계속 실패했습니다."
+  cause="실제로는 13수째에 대국이 이미 끝났는데, 테스트가 그 뒤로도 수를 두고 있었습니다."
+  fix="대국 종료 시점까지만 수를 두도록 테스트 헬퍼(playUntilEnded)를 고쳤습니다."
+/>
+
+<Trouble
+  problem="Windows 에서 prisma generate 가 EPERM 으로 실패했습니다."
+  cause="개발 서버(tsx watch) 프로세스가 Prisma 엔진 DLL 을 잡고 있었습니다."
+  fix="개발 서버를 멈춘 뒤 generate 를 실행하도록 작업 순서를 정리했습니다."
+/>
+
+남은 과제: CPU 탐색을 Web Worker 로 분리, KI2 · CSA 기보 지원, 관전 기능.

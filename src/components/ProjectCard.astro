@@ -1,0 +1,42 @@
+---
+import Cover from './Cover.astro';
+import Icon from './Icon.astro';
+import TechIcon from './TechIcon.astro';
+import SampleBadge from './SampleBadge.astro';
+import type { Project } from '../lib/content';
+
+interface Props {
+  project: Project;
+  /** 역할 · 기간 줄 표시 */
+  meta?: boolean;
+}
+const { project, meta = false } = Astro.props;
+const p = project.data;
+const href = `/projects/${project.id}/`;
+---
+<article class="card" data-stack={JSON.stringify(p.stack)}>
+  <Cover kind="projects" id={project.id} title={p.name} label={p.code} />
+  <div class="cbody">
+    <div class="trow">
+      <h3><a class="card-link" href={href}>{p.name}</a> <SampleBadge show={p.sample} /></h3>
+      {
+        (p.live || p.repo) && (
+          <div class="ext">
+            {p.live && <a href={p.live} aria-label={`${p.name} 사이트 열기`} title="사이트"><Icon name="globe" class="ico-sm" /></a>}
+            {p.repo && <a href={p.repo} aria-label={`${p.name} GitHub 저장소`} title="GitHub"><TechIcon name="GitHub" size={15} /></a>}
+          </div>
+        )
+      }
+    </div>
+    <p class="desc">{p.summary}</p>
+    {meta && <p class="cmeta">{p.role} · {p.period}</p>}
+    <div class="techs">{p.stack.map((t) => <TechIcon name={t} size={18} />)}</div>
+    <div class="cfoot">
+      <span class="pills">
+        <span class="pill">{p.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.status}</span>
+        {p.release && <span class="pill"><Icon name="download" class="ico-xs" />{p.release.version} 릴리스</span>}
+      </span>
+      <span class="go" aria-hidden="true">자세히 보기 <Icon name="external" class="ico-xs" /></span>
+    </div>
+  </div>
+</article>

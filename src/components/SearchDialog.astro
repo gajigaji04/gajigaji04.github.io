@@ -1,0 +1,128 @@
+---
+import Icon from './Icon.astro';
+---
+<dialog class="sd" id="search" aria-label="사이트 검색">
+  <label class="srch">
+    <Icon name="search" />
+    <span class="sr-only">검색어</span>
+    <input
+      type="search"
+      placeholder="글, 프로젝트 검색"
+      autocomplete="off"
+      spellcheck="false"
+      role="combobox"
+      aria-expanded="true"
+      aria-controls="search-results"
+      aria-autocomplete="list"
+      data-search-input
+    />
+    <span class="kbd">esc</span>
+  </label>
+  <div class="res" id="search-results" role="listbox" aria-label="검색 결과" data-search-results>
+    <p class="msg">검색어를 입력하세요.</p>
+  </div>
+  <div class="foot2" aria-hidden="true"><span>↑↓ 이동</span><span>↵ 열기</span><span>esc 닫기</span><span style="margin-left: auto">powered by pagefind</span></div>
+</dialog>
+
+<script>
+  type PagefindResult = { data: () => Promise<{ url: string; excerpt: string; meta: Record<string, string> }> };
+  type Pagefind = {
+    init?: () => Promise<void>;
+    debouncedSearch: (q: string, opts?: object, ms?: number) => Promise<{ results: PagefindResult[] } | null>;
+  };
+
+  const dialog = document.getElementById('search') as HTMLDialogElement | null;
+  const input = dialog?.querySelector<HTMLInputElement>('[data-search-input]');
+  const results = dialog?.querySelector<HTMLDivElement>('[data-search-results]');
+  let pagefind: Pagefind | null | undefined;
+  let selected = -1;
+
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  const KIND: Record<string, string> = { blog: 'Blog', project: 'Project', page: 'Page' };
+
+  async function load(): Promise<Pagefind | null> {
+    if (pagefind !== undefined) return pagefind;
+    try {
+      const url = '/pagefind/pagefind.js';
+      pagefind = (await import(/* @vite-ignore */ url)) as Pagefind;
+      await pagefind.init?.();
+    } catch {
+      pagefind = null;
+    }
+    return pagefind;
+  }
+
+  function message(text: string) {
+    if (results) results.innerHTML = `<p class="msg">${esc(text)}</p>`;
+    selected = -1;
+  }
+
+  function items() {
+    return Array.from(results?.querySelectorAll<HTMLAnchorElement>('a') ?? []);
+  }
+
+  function select(i: number) {
+    const list = items();
+    if (!list.length) return;
+    selected = (i + list.length) % list.length;
+    list.forEach((a, idx) => a.setAttribute('aria-selected', String(idx === selected)));
+    list[selected].scrollIntoView({ block: 'nearest' });
+    input?.setAttribute('aria-activedescendant', list[selected].id);
+  }
+
+  async function run(q: string) {
+    if (!q.trim()) return message('검색어를 입력하세요.');
+    const pf = await load();
+    if (!pf) return message('검색 인덱스가 없습니다. `npm run build` 후 `npm run preview` 에서 동작합니다.');
+    const res = await pf.debouncedSearch(q, {}, 150);
+    if (!res) return; // 더 새로운 입력으로 대체됨
+    if (!res.results.length) return message(`no results for "${q}"`);
+    const data = await Promise.all(res.results.slice(0, 8).map((r) => r.data()));
+    if (!results) return;
+    results.innerHTML = data
+      .map(
+        (d, i) => `<a id="sr-${i}" role="option" aria-selected="false" href="${esc(d.url)}">
+          <span class="rk">${esc(KIND[d.meta.kind] ?? 'Page')}</span>
+          <span class="rt">${esc(d.meta.title ?? d.url)}</span>
+          <span class="rx">${d.excerpt}</span></a>`,
+      )
+      .join('');
+    select(0);
+  }
+
+  function open() {
+    if (!dialog || dialog.open) return;
+    dialog.showModal();
+    input?.select();
+    load();
+  }
+
+  document.querySelectorAll('[data-search-open]').forEach((b) => b.addEventListener('click', open));
+  input?.addEventListener('input', () => run(input.value));
+  input?.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') (e.preventDefault(), select(selected + 1));
+    else if (e.key === 'ArrowUp') (e.preventDefault(), select(selected - 1));
+    else if (e.key === 'Enter') {
+      const a = items()[selected];
+      if (a) (e.preventDefault(), (location.href = a.href));
+    }
+  });
+  // 바깥(backdrop) 클릭 시 닫기
+  dialog?.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement;
+    const typing = t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      dialog?.open ? dialog.close() : open();
+    } else if (e.key === '/' && !typing && !dialog?.open) {
+      e.preventDefault();
+      // 블로그 목록처럼 페이지 안에 검색창이 있으면 그쪽으로
+      const local = document.querySelector<HTMLInputElement>('[data-local-search]');
+      local ? local.focus() : open();
+    }
+  });
+</script>

@@ -1,0 +1,19 @@
+---
+import Icon from './Icon.astro';
+import TechIcon from './TechIcon.astro';
+import { PROFILE } from '../data/profile';
+
+const year = new Date().getFullYear();
+// GitHub Actions 빌드에서는 커밋 해시가 표시됩니다.
+const sha = (process.env.GITHUB_SHA ?? '').slice(0, 7);
+---
+<footer class="foot">
+  <div class="col">
+    <div class="fl">
+      <a class="ib" href={`https://github.com/${PROFILE.github}`} aria-label="GitHub"><TechIcon name="GitHub" size={16} /></a>
+      <a class="ib" href={`mailto:${PROFILE.email}`} aria-label="이메일"><Icon name="mail" class="ico-sm" /></a>
+      <a class="ib" href="/rss.xml" aria-label="RSS"><Icon name="rss" class="ico-sm" /></a>
+    </div>
+    <p class="mono">© {year} {PROFILE.handle} · Built with Astro{sha && ` · ${sha}`}</p>
+  </div>
+</footer>

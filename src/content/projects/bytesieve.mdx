@@ -1,0 +1,79 @@
+---
+code: P-01
+name: ByteSieve
+summary: C11 과 Win32 API 만으로 만든 Windows 디스크 사용량 분석 · 개발 캐시 정리 도구. CLI 와 GUI 를 함께 제공하며 v1.0.1 을 GitHub Releases 로 배포 중입니다.
+role: 개인 프로젝트 · 설계 · 개발 · 릴리스
+team: 1명
+period: 2026.10 — 진행 중
+sortDate: 2026-11-14
+stack: [C, Win32 API, CMake, MSVC, Inno Setup, GitHub Actions]
+status: 진행 중
+kind: 개인 프로젝트 · Windows 데스크톱 앱
+deploy: GitHub Releases (설치 프로그램 · 포터블 zip)
+repo: https://github.com/gajigaji-dev/ByteSieve
+release:
+  version: v1.0.1
+  url: https://github.com/gajigaji-dev/ByteSieve/releases/tag/v1.0.1
+  date: 2026-11-14
+order: 1
+featured: true
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+import Trouble from '../../components/mdx/Trouble.astro';
+
+## Overview
+
+Windows 디스크에서 무엇이 공간을 차지하는지 빠르게 찾고, `node_modules` · npm · pip · Gradle 캐시 같은 **개발 환경 찌꺼기를 안전하게 정리**하는 도구입니다.
+외부 라이브러리 없이 **C11 과 Win32 API 만으로** 작성했고, 명령줄 도구(`disk-scanner`)와 GUI(`bytesieve-gui`)가 같은 Core 를 공유합니다.
+
+최신 릴리스는 [v1.0.1](https://github.com/gajigaji-dev/ByteSieve/releases/tag/v1.0.1)(2026-11-14)이며, 설치 프로그램 · 포터블 zip · SHA-256 체크섬 파일을 함께 배포합니다. 지원 환경은 Windows 10 / 11 x64 입니다.
+
+## 주요 기능
+
+- **폴더 스캔과 트리맵** — 폴더별 용량을 트리 · 목록 · squarified 트리맵으로 표시
+- **실제 확보 용량 계산** — 할당 크기 · 하드 링크 수 · 압축 크기를 반영해 "지우면 실제로 비는 용량"을 계산하고, 클라우드 파일은 내려받지 않고 읽음
+- **안전한 정리** — 영구 삭제 대신 휴지통 이동(실행 취소 가능) 또는 격리 폴더 이동 · 복원 지원. CLI 의 `clean` 은 기본값이 `--dry-run`
+- **Git 프로젝트 분석** — 프로젝트별 미커밋 변경 · 푸시하지 않은 커밋을 읽기 전용으로 확인해 정리 판단을 도움
+- **그 밖의 도구** — 드라이브 · BitLocker 상태, CPU · RAM 모니터, CSV · HTML 내보내기, WSL · Docker 가상 디스크 탐지
+- **v1.0.1 변경점** — GUI 4개 언어(한국어 · 영어 · 일본어 · 중국어 간체) 즉시 전환, Per-Monitor DPI V2, 직전 기록 비교 속도 개선(150–195ms → 50–56ms), 비교 · 저장 작업을 작업 스레드로 이동
+
+## Technical Details
+
+- **병렬 미리 열거 스레드 풀** — `SRWLOCK` 과 조건 변수로 동기화하고, 최소 힙 큐에 상한을 두어 한도가 차면 가장 늦게 필요한 작업을 내보냅니다. 최대 사용량은 `InterlockedAdd64` · CAS 로 집계합니다.
+- **파일 열거** — `GetFileInformationByHandleEx` 의 `FileIdExtdDirectoryInfo`(128비트 ID)를 우선 쓰고, 지원하지 않는 볼륨에서는 `FileIdBothDirectoryInfo` 로 내려갑니다.
+- **스캔 작업 분리** — 스캔은 별도 스레드에서 돌고, 진행률 스냅숏은 `CRITICAL_SECTION` 으로 보호하며 취소는 Interlocked 플래그로 처리합니다.
+- **휴지통 이동** — Shell `IFileOperation` 에 `FOFX_RECYCLEONDELETE | FOF_ALLOWUNDO` 를 지정해 되돌릴 수 있게 옮깁니다.
+- **순수 Win32 GUI** — comctl32 TreeView · ListView 와 GDI 로 그리고, DWM 속성과 `SetWindowTheme` 으로 다크 모드를, `WM_DPICHANGED` 로 고배율 모니터를 처리합니다.
+- **테스트 · 배포 자동화** — CTest 테스트 73개(`add_test`), CI 에서 Release 빌드 후 테스트 실행. `v*` 태그를 올리면 패키징 → 설치 프로그램 테스트 → draft 릴리스까지 GitHub Actions 로 처리합니다.
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'Core', desc: '약 30개 정적 라이브러리', highlight: true },
+    { name: 'disk-scanner', desc: 'CLI' },
+    { name: 'bytesieve-gui', desc: 'Win32 GUI' },
+    { name: 'bytesieve-bench', desc: '성능 측정' },
+  ]}
+  note="scanner · model · history · job · cleanup_rules · reclaim · plan · quarantine 등으로 나눈 Core 를 실행 파일 3개가 함께 씁니다. CLI 와 GUI 가 같은 탐지 · 계획 · 실행 코드를 사용합니다."
+/>
+
+- 빌드: CMake 3.21+ · MSVC(정적 CRT, `/W4 /utf-8 /std:c11`)
+- 배포: Inno Setup 6 설치 프로그램 + PowerShell 패키징 스크립트
+- 처음에는 GUI 에 로직이 섞여 있었으나, 공통 Core 기반으로 리팩터링해 CLI · GUI · 벤치마크가 같은 코드를 쓰도록 정리했습니다.
+
+## Trouble Shooting
+
+<Trouble
+  problem="병렬 스캔을 도입하자 큰 폴더에서 메모리 사용량이 크게 늘었습니다."
+  cause="상한 없는 작업 큐에 5만 개가 넘는 작업이 쌓였고, 작업 하나가 약 670B 를 차지했습니다."
+  fix="하위 폴더 정보를 32B 칸으로 줄이고 큐 항목을 16B 로 압축한 뒤, 미리 읽기 상한을 1,024개 · 2 MiB 로 제한했습니다. 동시 폴더 작업 52,000 → 1,040, 최대 메모리 58 → 39–41 MiB, C:\Windows 스캔 16.4초 → 3.2초(8스레드)."
+/>
+
+<Trouble
+  problem="직전 스캔 기록과 비교하는 데 150–195ms 가 걸리고, 그동안 UI 스레드가 멈췄습니다."
+  cause="비교용 대문자 키를 두 번씩 만들면서 malloc 과 CharUpperBuffW 가 약 68만 번 호출되고 있었습니다."
+  fix="키와 해시를 한 번만 만들도록 바꿔 50–56ms 로 줄였고, 개선 전후 출력이 바이트 단위로 같은지 검증했습니다. 비교 · 저장을 작업 스레드로 옮겨 UI 스레드 점유 시간도 평균 313ms → 40ms 로 줄였습니다."
+/>
+
+알려진 제한(v1.0.1): 코드 서명 없음, 다크 모드에서 일부 대화상자가 밝게 표시됨, HTML 보고서와 CLI 는 한국어만 지원.

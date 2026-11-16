@@ -1,0 +1,51 @@
+---
+code: P-11
+name: Eyes Alarm
+summary: 라식 수술 후 안약 점안 시간을 알려주는 앱. 같은 바닐라 JS 코드를 PWA 와 Capacitor Android 앱으로 함께 배포합니다.
+role: 개인 프로젝트 · 기획 · 개발
+team: 1명
+period: 2026.07 — 2026.07
+sortDate: 2026-07-11
+stack: [JavaScript, HTML5, CSS, PWA, Capacitor, Android]
+status: 완료
+kind: 개인 프로젝트
+repo: https://github.com/gajigaji04/eyes-alarm
+order: 11
+featured: false
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+
+## Overview
+
+라식 수술 후 여러 종류의 안약을 정해진 시간마다 넣어야 하는 불편을 해결하려고 만든 알림 앱입니다.
+서버 · DB · 로그인 없이 기기 안에서만 동작하며, 웹(PWA)과 Android 앱(Capacitor) 두 가지 형태로 사용할 수 있습니다.
+
+## 주요 기능
+
+- **안약 등록 2가지 방식** — 고정 시간(기상 · 점심 · 저녁 · 취침) / N시간마다 M회
+- **생활 패턴 설정** — 기상 · 식사 · 취침 시각에 맞춰 오늘 일정 생성, 이행률 표시
+- **완료 체크와 실제 점안 시각 수정** — 간격형 안약은 실제로 넣은 시각을 기준으로 다음 회차를 다시 계산
+- **알림에서 바로 완료 처리** — 웹은 Service Worker, Android 는 로컬 알림 액션으로 처리
+- **눈 휴식 타이머** — 50분 작업 / 10분 휴식
+
+## Technical Details
+
+- **일정 계산**: 취침 이후에는 간격형 회차를 만들지 않고, 같은 시각에 겹친 안약은 5분 간격으로 뒤로 밀어 배치합니다.
+- **웹 / 네이티브 알림 분기**: 웹은 1초마다 도래한 일정을 확인해 알림을 띄우고 오늘 알린 목록을 저장해 중복을 막습니다. Android 는 오늘 남은 일정을 OS 알람으로 미리 예약하고, 일정이 바뀌면 기존 예약을 취소 후 다시 예약합니다.
+- **휴식 타이머 상태**: 단계를 저장하지 않고 시작 시각에서 매번 계산해 상태가 어긋나지 않게 했습니다.
+- **Android 알림**: 최대 중요도 채널과 전용 알림음을 쓰고, 안약 ID 문자열을 해시해 숫자 알림 ID 로 변환합니다.
+- **에셋 생성 스크립트**: 알림음(PCM16 WAV)과 앱 아이콘(PNG)을 외부 라이브러리 없이 Node 내장 기능으로 생성합니다.
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'storage.js', desc: 'localStorage' },
+    { name: 'schedule.js', desc: '순수 일정 계산', highlight: true },
+    { name: 'notify.js', desc: '웹 · 네이티브 알림 분기' },
+    { name: 'www/', desc: 'PWA · Capacitor Android' },
+  ]}
+  note="번들러 없이 바닐라 JS 모듈로 구성하고, 같은 www/ 를 PWA 와 Android 앱이 함께 사용합니다."
+/>
+
+알려진 제약: 웹은 탭이 닫히면 알림이 오지 않고, Android 는 하루치 일정만 예약하므로 매일 앱을 한 번 열어야 합니다. 현재 디버그 APK 단계입니다.

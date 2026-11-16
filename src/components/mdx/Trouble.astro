@@ -1,0 +1,19 @@
+---
+/**
+ * 트러블슈팅 기록. MDX 에서:
+ *   <Trouble problem="..." cause="..." fix="..." />
+ */
+interface Props {
+  problem: string;
+  cause: string;
+  fix: string;
+}
+const { problem, cause, fix } = Astro.props;
+---
+<div class="trouble">
+  <dl>
+    <dt class="k-problem">problem</dt><dd>{problem}</dd>
+    <dt class="k-cause">cause</dt><dd>{cause}</dd>
+    <dt class="k-fix">fix</dt><dd>{fix}</dd>
+  </dl>
+</div>
