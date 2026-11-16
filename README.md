@@ -78,7 +78,7 @@ URL 은 파일명에서 날짜를 뺀 값입니다: `2026-11-15-hello.md` → `/
 
 ### 프로젝트 MDX
 
-`src/content/projects/sample-project-02.mdx` 를 복사해 시작하면 됩니다. 본문의 `##` 제목에 자동으로 01, 02… 번호와 목차가 붙습니다. 사용할 수 있는 컴포넌트:
+`docs/templates/project.mdx` 를 `src/content/projects/` 에 복사해 시작하면 됩니다. 본문의 `##` 제목에 자동으로 01, 02… 번호와 목차가 붙습니다. 사용할 수 있는 컴포넌트:
 
 - `<ArchFlow nodes={[{ name, desc, highlight }]} note="..." />` — 아키텍처 흐름도
 - `<Adr id title status open context decision consequence />` — 기술적 의사결정 기록

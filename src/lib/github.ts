@@ -2,8 +2,9 @@
  * 빌드 시점에 GitHub GraphQL API 로 기여 그래프와 저장소 통계를 가져옵니다.
  *
  * - GitHub Actions 에서는 워크플로가 GITHUB_TOKEN 을 넘겨 주므로 실제 데이터가 들어갑니다.
- * - 토큰이 없거나(로컬 빌드) 요청이 실패하면 고정 시드로 만든 예시 데이터를 쓰고,
- *   화면에 "예시 데이터" 라고 표시합니다. 빌드는 실패하지 않습니다.
+ * - 토큰이 없거나(로컬 빌드) 요청이 실패하면 기여 0 인 빈 그래프를 쓰고 화면에 "예시" 로 표시합니다.
+ *   임의의 기여 데이터는 만들지 않습니다(실제 기록처럼 보이지 않도록). 빌드는 실패하지 않습니다.
+ * - 토큰은 빌드 중 서버에서만 쓰이고 결과 HTML 에는 숫자만 들어갑니다.
  */
 import { PROFILE } from '../data/profile';
 
@@ -56,8 +57,7 @@ function longestStreak(days: { count: number }[]): number {
 }
 
 function sample(reason: string): GithubActivity {
-  // 결정적 의사난수 — 빌드마다 같은 그림이 나오도록
-  let s = 11;
+  // 최근 53주 날짜 틀만 만들고 기여 수는 모두 0
   const today = new Date();
   const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   start.setUTCDate(start.getUTCDate() - 52 * 7 - start.getUTCDay());
@@ -65,14 +65,10 @@ function sample(reason: string): GithubActivity {
   for (let w = 0; w < 53; w++) {
     const week: GithubActivity['weeks'][number] = [];
     for (let d = 0; d < 7; d++) {
-      s = (s * 9301 + 49297) % 233280;
-      const r = s / 233280;
-      let level = (r < 0.42 ? 0 : r < 0.66 ? 1 : r < 0.84 ? 2 : r < 0.95 ? 3 : 4) as Level;
-      if (d === 0 || d === 6) level = Math.max(0, level - 1) as Level;
       const date = new Date(start);
       date.setUTCDate(start.getUTCDate() + w * 7 + d);
       if (date > today) break;
-      week.push({ date: date.toISOString().slice(0, 10), count: level * 2, level });
+      week.push({ date: date.toISOString().slice(0, 10), count: 0, level: 0 });
     }
     if (week.length) weeks.push(week);
   }

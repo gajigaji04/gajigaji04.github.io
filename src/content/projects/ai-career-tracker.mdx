@@ -1,0 +1,77 @@
+---
+code: P-03
+name: AI Career Tracker
+summary: 학습 기록 · 프로젝트 · 지원 현황 · 이력서를 한곳에 모으고, 그 데이터로 AI 가 자기소개서 초안과 예상 면접 질문을 만드는 취업 관리 플랫폼. EC2 에 Docker 로 직접 배포했습니다.
+role: 개인 프로젝트 · 기획 · 백엔드 · 프론트엔드 · 배포
+team: 1명
+period: 2026.06 — 진행 중
+sortDate: 2026-08-19
+stack: [TypeScript, Node.js, Express, Prisma, PostgreSQL, React, Vite, Docker, Nginx, GitHub Actions, AWS]
+status: 진행 중
+kind: 개인 프로젝트
+deploy: AWS EC2 · Docker Compose · Nginx
+repo: https://github.com/gajigaji04/AI-Career-Tracker
+order: 3
+featured: true
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+import Trouble from '../../components/mdx/Trouble.astro';
+
+## Overview
+
+**CareerHub** — 개발자 취업 준비 과정에서 흩어지는 학습 기록, 프로젝트, 지원 현황, 이력서를 한곳에서 관리하는 플랫폼입니다.
+쌓인 기록을 AI 에 컨텍스트로 넘겨 **지원 건별 자기소개서 초안과 예상 면접 질문**을 생성합니다. 기획부터 백엔드 · 프론트엔드 · 클라우드 배포까지 혼자 진행했습니다.
+
+## 주요 기능
+
+- **기록 관리** — 학습(Study), 프로젝트, 지원 현황(Application), 이력서 CRUD
+- **AI 분석** — 지원 건 + 최근 프로젝트 5개 + 학습 기록 5개로 프롬프트를 구성해 자기소개서 초안 · 예상 면접 질문 생성, 결과는 덮어쓰지 않고 누적 저장
+- **이력서 버전 관리** — S3 업로드, 버전 자동 증가, presigned URL 로 다운로드
+- **인증** — 회원가입 · 로그인, 비밀번호 재설정 메일, SMS 아이디 찾기
+- **대시보드** — 지원 현황과 기록 통계 시각화
+
+## Technical Details
+
+- **토큰 무효화** — Access 1시간 / Refresh 30일. 사용자별 `tokenVersion` 을 두어 로그아웃 · 비밀번호 재설정 시 기존 Refresh 토큰을 한 번에 무효화합니다.
+- **비밀번호 재설정** — `crypto.randomBytes` 로 만든 1회용 만료 토큰.
+- **요청 제한** — 인증 API 15분 10회, AI API 1시간 20회(express-rate-limit).
+- **외부 서비스 대체 경로** — SMS(Solapi) 자격 증명이 없으면 로그로 대체해 개발 환경에서도 흐름을 확인할 수 있게 했습니다.
+- **AI** — Groq SDK(`llama-3.3-70b-versatile`)를 서비스 계층에서 호출합니다.
+- **입력 검증 · 문서화** — Zod 스키마 검증, Swagger(swagger-jsdoc) API 문서, pino 로깅, helmet.
+- **테스트** — 백엔드 Vitest + Supertest(서비스 6개 + 통합 테스트), 프론트엔드 Vitest 테스트 3개.
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'React SPA', desc: 'TanStack Query · Vite' },
+    { name: 'Nginx', desc: '정적 서빙 · 프록시' },
+    { name: 'Express API', desc: 'routes · services · Zod', highlight: true },
+    { name: 'PostgreSQL', desc: 'Prisma · AWS RDS' },
+  ]}
+  note="main 에 push 하면 GitHub Actions 가 npm audit → 백엔드 · 프론트엔드 테스트 → Docker Hub 푸시 → EC2 에 Compose 동기화 순서로 배포합니다. 이력서 파일은 S3 에 저장합니다."
+/>
+
+백엔드는 `routes → controllers → services` 구조이고, 요청 검증은 `validations`(Zod)로 분리했습니다. Prisma 모델은 User · Study · Project · Application · Resume · AiAnalysis 입니다.
+
+## Trouble Shooting
+
+<Trouble
+  problem="배포 후 RDS 에 테이블이 없어 API 가 실패했습니다."
+  cause="컨테이너 이미지에 마이그레이션 단계가 없어, 새 DB 에 스키마가 적용되지 않았습니다."
+  fix="Dockerfile CMD 에서 서버 시작 전에 prisma migrate deploy 를 실행하도록 바꿨습니다."
+/>
+
+<Trouble
+  problem="Alpine 기반 Docker 이미지 빌드에서 bcrypt 네이티브 모듈 설치가 실패했습니다."
+  cause="Windows 에서 생성한 lockfile 이 Linux(Alpine) 환경과 맞지 않았습니다."
+  fix="컨테이너 안에서 lockfile 을 다시 생성해 빌드 환경과 일치시켰습니다."
+/>
+
+<Trouble
+  problem="SPA 에서 새로고침하면 404 가 나고, 설정 변경 후에는 500 이 발생했습니다."
+  cause="Nginx 가 클라이언트 라우트를 실제 파일 경로로 찾았고, 이후 설정에서 root · index 지시어가 빠져 있었습니다."
+  fix="try_files 로 index.html 폴백을 추가하고 누락된 root · index 지시어를 복구했습니다."
+/>
+
+남은 과제: SSH 포트 제한, 코드 스플리팅(번들 약 850KB), 목록 페이지네이션, 외부 모니터링.

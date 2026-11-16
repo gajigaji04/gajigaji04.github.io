@@ -64,7 +64,7 @@
 
 ### 프로젝트
 
-- 파일: `src/content/projects/<영문-slug>.mdx`, 새 프로젝트는 `sample-project-02.mdx` 를 복사해서 시작
+- 파일: `src/content/projects/<영문-slug>.mdx`, 새 프로젝트는 `docs/templates/project.mdx` 를 복사해서 시작
 - `code` 는 `P-01` 형식으로 순서대로
 - 본문 섹션 순서: 개요 → 문제 정의와 목표 → 아키텍처 → 주요 기능 → 기술적 의사결정 → 트러블슈팅 → 회고
 - 의사결정은 `<Adr>`, 트러블슈팅은 `<Trouble>`, 흐름도는 `<ArchFlow>` 컴포넌트 사용

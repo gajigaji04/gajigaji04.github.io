@@ -1,0 +1,49 @@
+---
+code: P-06
+name: Schedule App
+summary: 할 일 · 캘린더 · 팀 채팅 · 메모 · 타이머를 한 화면에서 관리하는 스케줄러 웹앱. Supabase 인증 · RLS · Realtime 과 AI 비서를 붙였습니다.
+role: 개인 프로젝트 · 기획 · 개발
+team: 1명
+period: 2026.05 — 진행 중
+sortDate: 2026-05-26
+stack: [JavaScript, Next.js, React, Tailwind CSS, Supabase, Google Calendar, Claude]
+status: 진행 중
+kind: 개인 프로젝트
+repo: https://github.com/gajigaji04/Schedule-App
+order: 6
+featured: false
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+
+## Overview
+
+**TeamScheduler** — 팀 일정, 할 일, 메모, 타이머를 오가며 여러 앱을 쓰는 불편을 줄이려고 만든 올인원 스케줄러입니다.
+Next.js App Router 위에 Supabase 를 백엔드로 사용했습니다.
+
+## 주요 기능
+
+- **화면** — 대시보드, 캘린더, 할 일, 팀, 메모, 타이머, 계산기, 설정
+- **로그인** — Supabase 이메일 OTP, Google · Kakao · GitHub OAuth
+- **팀 채팅** — Supabase Realtime 채널로 실시간 메시지
+- **마감 알림** — 할 일 마감 1시간 · 30분 전 브라우저 알림
+- **AI 비서 ARIA** — 사용자의 할 일과 Google Calendar 일정을 컨텍스트로 넣어 일정 관련 질문에 답변
+- **Google Calendar 연동** — 읽기 전용으로 일정 불러오기
+
+## Technical Details
+
+- **행 수준 보안(RLS)** — users · teams · tasks · messages · direct_messages · team_events 모든 테이블에 RLS 정책을 두어, 클라이언트가 Supabase 에 직접 접근해도 자기 데이터만 읽고 쓰게 했습니다.
+- **AI API 라우트** — Next.js Route Handler 에서 Bearer 토큰을 검증한 뒤 Anthropic Messages API 를 호출하고, 사용자별 분당 20회 인메모리 rate limit 을 둡니다.
+- **권한 분리** — 클라이언트는 anon key + RLS, 서버 라우트는 service key 로 필요한 작업만 수행합니다.
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'App Router', desc: '(app) 그룹 · AuthGuard' },
+    { name: 'models/*', desc: 'Supabase 쿼리' },
+    { name: 'Supabase', desc: 'Auth · Postgres RLS · Realtime', highlight: true },
+    { name: 'Route Handlers', desc: 'AI · Google Calendar' },
+  ]}
+/>
+
+화면 컴포넌트에서 데이터 접근을 `models/` 로 분리하고, 인증이 필요한 화면은 `AuthGuard` · `AppShell` 레이아웃으로 묶었습니다.

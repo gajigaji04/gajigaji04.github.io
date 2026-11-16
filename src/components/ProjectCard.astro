@@ -32,7 +32,10 @@ const href = `/projects/${project.id}/`;
     {meta && <p class="cmeta">{p.role} · {p.period}</p>}
     <div class="techs">{p.stack.map((t) => <TechIcon name={t} size={18} />)}</div>
     <div class="cfoot">
-      <span class="pill">{p.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.status}</span>
+      <span class="pills">
+        <span class="pill">{p.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.status}</span>
+        {p.release && <span class="pill"><Icon name="download" class="ico-xs" />{p.release.version} 릴리스</span>}
+      </span>
       <span class="go" aria-hidden="true">자세히 보기 <Icon name="external" class="ico-xs" /></span>
     </div>
   </div>

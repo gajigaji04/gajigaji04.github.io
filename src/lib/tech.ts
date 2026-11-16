@@ -29,6 +29,9 @@ const ALIASES: Record<string, string> = {
   java: 'openjdk',
   'c#': 'dotnet',
   'github-actions': 'githubactions',
+  'spring data jpa': 'spring',
+  kafka: 'apachekafka',
+  jwt: 'jsonwebtokens',
 };
 
 /** simple-icons 에 없는 아이콘 직접 추가: { '이름(소문자)': { title, path } } */

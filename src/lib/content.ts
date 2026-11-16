@@ -12,7 +12,9 @@ export async function getPosts(): Promise<Post[]> {
 /** 최근순 프로젝트 */
 export async function getProjects(): Promise<Project[]> {
   const items = await getCollection('projects');
-  return items.sort((a, b) => b.data.sortDate.valueOf() - a.data.sortDate.valueOf());
+  // order(작을수록 앞) → 없으면 뒤로, 같으면 sortDate 최신순
+  const rank = (p: Project) => p.data.order ?? Number.POSITIVE_INFINITY;
+  return items.sort((a, b) => rank(a) - rank(b) || b.data.sortDate.valueOf() - a.data.sortDate.valueOf());
 }
 
 /** YYYY-MM-DD (KST 기준) */

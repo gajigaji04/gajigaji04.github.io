@@ -112,6 +112,7 @@ main { flex: 1; }
   flex: none; width: fit-content; align-self: center;
 }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); flex: none; display: inline-block; }
+.pills { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .pill { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px; background: var(--muted); font-size: 12px; font-weight: 500; color: var(--fg); white-space: nowrap; }
 .tag { display: inline-flex; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: var(--muted); color: var(--mfg); }
 .btn {
@@ -132,8 +133,13 @@ main { flex: 1; }
 .tech svg { display: block; }
 .tech-text { font: 500 11px var(--font-mono); padding: 2px 7px; border-radius: 5px; background: var(--muted); color: var(--mfg); }
 .techs { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: var(--mfg); }
-.stack { display: flex; flex-wrap: wrap; gap: 14px 18px; }
-.stack li { display: inline-flex; min-width: 44px; height: 44px; align-items: center; justify-content: center; color: var(--fg); border-radius: 10px; }
+.stack { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 4px; }
+.stack li { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 4px 10px; color: var(--fg); border-radius: 10px; text-align: center; }
+.stack li svg { display: block; flex: none; }
+.stack-group + .stack-group { margin-top: 20px; }
+.stack-cat { margin-bottom: 6px; font-size: 13px; font-weight: 500; color: var(--mfg); }
+.stack-name { font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--fg); word-break: keep-all; }
+.stack-ph { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; background: var(--muted); color: var(--mfg); font: 500 11px var(--font-mono); }
 .stack li:hover { background: var(--muted); }
 
 /* ---------- Profile ---------- */
@@ -153,7 +159,15 @@ main { flex: 1; }
 .about b, .about strong { color: var(--fg); font-weight: 500; }
 
 /* GitHub heatmap */
+.h2-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.h2-row .h2 { margin-bottom: 0; }
+.h2-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--mfg); }
+.h2-link:hover { color: var(--fg); }
 .heat-scroll { overflow-x: auto; padding-bottom: 4px; }
+.heat-months { display: grid; column-gap: 3px; width: max-content; height: 14px; margin-bottom: 4px; font-size: 10px; line-height: 14px; color: var(--mfg); }
+.heat-months span { white-space: nowrap; }
+.heat-tip { position: fixed; z-index: 60; padding: 5px 9px; border-radius: 6px; background: var(--fg); color: var(--bg); font-size: 12px; font-weight: 500; white-space: nowrap; pointer-events: none; }
+.heat-tip[hidden] { display: none; }
 .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 10px); grid-auto-columns: 10px; gap: 3px; width: max-content; }
 .heat i, .legend i { display: block; width: 10px; height: 10px; border-radius: 2px; }
 .lv0 { background: var(--l0); } .lv1 { background: var(--l1); } .lv2 { background: var(--l2); } .lv3 { background: var(--l3); } .lv4 { background: var(--l4); }
@@ -288,14 +302,16 @@ main { flex: 1; }
 .prose a:hover { text-decoration-color: var(--fg); }
 .prose strong { font-weight: 600; color: var(--fg); }
 .prose ul, .prose ol { display: flex; flex-direction: column; gap: 6px; }
-.prose ul > li { display: flex; gap: 12px; }
-.prose ul > li::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: var(--l2); margin-top: 13px; flex: none; }
+/* 글머리는 절대 위치 — li 를 flex 로 두면 굵은 글씨 · 코드 · 문장이 각각 다른 칸으로 갈라짐 */
+.prose ul > li { position: relative; padding-left: 16px; }
+.prose ul > li::before { content: ''; position: absolute; left: 0; top: 13px; width: 4px; height: 4px; border-radius: 50%; background: var(--l2); }
 .prose ol { counter-reset: ol; }
-.prose ol > li { display: flex; gap: 10px; counter-increment: ol; }
-.prose ol > li::before { content: counter(ol) '.'; color: var(--mfg); font: 14px/1.85 var(--font-mono); flex: none; min-width: 1.4em; }
+.prose ol > li { position: relative; padding-left: calc(1.4em + 10px); counter-increment: ol; }
+.prose ol > li::before { content: counter(ol) '.'; position: absolute; left: 0; top: 0; color: var(--mfg); font: 14px/1.85 var(--font-mono); min-width: 1.4em; }
 .prose li > ul, .prose li > ol { margin-top: 6px; }
 .task-list-item input { display: none; }
-.prose ul > li.task-list-item::before { width: 14px; height: 14px; margin-top: 7px; border-radius: 4px; background: none; box-shadow: inset 0 0 0 1.5px var(--l2); }
+.prose ul > li.task-list-item { padding-left: 26px; }
+.prose ul > li.task-list-item::before { width: 14px; height: 14px; top: 7px; border-radius: 4px; background: none; box-shadow: inset 0 0 0 1.5px var(--l2); }
 .prose ul > li.task-list-item:has(input:checked)::before {
   background: #09090b url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5L20 7'/%3E%3C/svg%3E") center / 10px no-repeat;
   box-shadow: none;

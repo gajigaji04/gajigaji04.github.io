@@ -6,9 +6,13 @@ import SampleBadge from '../../components/SampleBadge.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
 import Cover from '../../components/Cover.astro';
 import { getProjects, countBy } from '../../lib/content';
+import { techIcon } from '../../lib/tech';
 
 const projects = await getProjects();
-const stacks = countBy(projects, (p) => p.data.stack).map(([s]) => s);
+// 필터 칩은 2개 이상의 프로젝트에서 쓴 기술만 (한 프로젝트 전용 기술까지 넣으면 칩이 너무 많아짐)
+const stacks = countBy(projects, (p) => p.data.stack)
+  .filter(([, n]) => n >= 2)
+  .map(([s]) => s);
 ---
 <BaseLayout title="Projects" description="직접 만들고 운영한 프로젝트와 각 프로젝트의 역할, 아키텍처, 기술적 의사결정을 기록합니다.">
   <section class="sec page-head" data-projects data-view="grid">
@@ -18,7 +22,7 @@ const stacks = countBy(projects, (p) => p.data.stack).map(([s]) => s);
     <div class="bar">
       <div class="chips" role="group" aria-label="기술 스택 필터">
         <button type="button" class="fp" aria-pressed="true" data-filter="All">전체</button>
-        {stacks.map((s) => <button type="button" class="fp" aria-pressed="false" data-filter={s}><TechIcon name={s} size={14} />{s}</button>)}
+        {stacks.map((s) => <button type="button" class="fp" aria-pressed="false" data-filter={s}>{techIcon(s).path && <TechIcon name={s} size={14} />}{s}</button>)}
       </div>
       <div style="display: flex; gap: 12px; align-items: center; margin-left: auto">
         <span class="muted" style="font-size: 13px" aria-live="polite" data-count>{projects.length}개</span>
@@ -44,7 +48,10 @@ const stacks = countBy(projects, (p) => p.data.stack).map(([s]) => s);
               <div class="techs">{p.data.stack.map((t) => <TechIcon name={t} size={16} />)}</div>
             </div>
             <div class="side">
-              <span class="pill">{p.data.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.data.status}</span>
+              <span class="pills">
+                <span class="pill">{p.data.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.data.status}</span>
+                {p.data.release && <span class="pill">{p.data.release.version}</span>}
+              </span>
               <span class="mono">{p.data.period}</span>
             </div>
           </article>

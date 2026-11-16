@@ -93,7 +93,7 @@ for (const dir of ['src/content/blog', 'src/content/projects']) {
   }
 }
 for (const f of ['src/data/profile.ts']) {
-  const n = ((await readFile(join(root, f), 'utf8')).match(/sample: true|STACK_IS_SAMPLE = true/g) ?? []).length;
+  const n = ((await readFile(join(root, f), 'utf8')).match(/sample: true\s*[,}]|STACK_IS_SAMPLE = true/g) ?? []).length;
   if (n) samples.push(`${f} (${n}곳)`);
 }
 if (samples.length) warnings.push(`예시 콘텐츠가 남아 있습니다:\n    - ${samples.join('\n    - ')}`);

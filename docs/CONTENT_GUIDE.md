@@ -47,7 +47,7 @@ git push
 | 위치 | `PROFILE.location` | 홈 개요 (옆 시계는 항상 KST) |
 | 이메일 · GitHub 아이디 | `PROFILE.email`, `PROFILE.github` | 홈 개요, 헤더, 푸터. GitHub 아이디는 기여 그래프 조회에도 쓰임 |
 | About | `PROFILE.about.points` | 홈 About. 한 줄 = 한 항목, `**굵게**` 사용 가능 |
-| 기술 스택 | `STACK` | 홈 Stack 아이콘 |
+| 기술 스택 | `STACK` (카테고리별 `items`) | 홈 Stack — 카테고리 제목 아래 아이콘 + 기술명 |
 
 ### 예시 값을 실제 값으로 바꾸기
 
@@ -66,7 +66,10 @@ name: { value: '홍길동' },
 **이름만 적으면** 아이콘이 자동으로 붙습니다([simple-icons](https://simpleicons.org) 에서 검색).
 
 ```ts
-export const STACK: string[] = ['TypeScript', 'React', 'Docker', 'Spring Boot', 'PostgreSQL'];
+export const STACK = [
+  { category: 'Backend', items: ['Spring Boot', 'Node.js'] },
+  { category: 'Database', items: ['PostgreSQL', 'Redis'] },
+];
 ```
 
 - 공식 표기를 씁니다: `Node.js`, `Next.js`, `Tailwind CSS`
@@ -96,7 +99,7 @@ export const STACK: string[] = ['TypeScript', 'React', 'Docker', 'Spring Boot', 
 
 ### 새 프로젝트 추가
 
-1. `sample-project-02.mdx` 를 복사해 **영문 kebab-case 이름**으로 저장합니다 → 이 이름이 URL 이 됩니다
+1. `docs/templates/project.mdx` 를 `src/content/projects/` 에 복사해 **영문 kebab-case 이름**으로 저장합니다 → 이 이름이 URL 이 됩니다
    `todo-app.mdx` → `/projects/todo-app/`
 2. 맨 위 frontmatter 를 채웁니다 (`sample: true` 줄과 주석은 지움)
 3. 본문 섹션을 채웁니다
@@ -119,14 +122,19 @@ kind: 팀 프로젝트             # 상세 페이지 상단 표시 (기본값: 
 deploy: Vercel                # (선택) 배포 환경
 repo: https://github.com/gajigaji04/todo-app   # (선택) 카드에 GitHub 아이콘
 live: https://todo.example.com                  # (선택) 카드에 사이트 아이콘
-featured: true                # 홈에 노출 (sortDate 최신순 최대 4개)
+order: 5                      # (선택) 노출 순서. 작을수록 앞, 없으면 sortDate 최신순으로 뒤에
+release:                      # (선택) 공개 릴리스 — 카드에 버전, 상세 페이지에 릴리스 버튼
+  version: v1.0.1
+  url: https://github.com/<owner>/<repo>/releases/tag/v1.0.1
+  date: 2026-11-14
+featured: true                # 홈에 노출 (정렬 순서대로 최대 4개)
 ---
 ```
 
 | 필드 | 필수 | 메모 |
 | --- | --- | --- |
 | `code`, `name`, `summary`, `role`, `team`, `period`, `sortDate`, `stack`, `status` | O | 빠지면 빌드 오류 |
-| `kind`, `deploy`, `repo`, `live`, `featured` | | `repo` 는 전체 URL(https://…) 이어야 함 |
+| `kind`, `deploy`, `repo`, `live`, `order`, `release`, `featured` | | `repo` · `release.url` 은 전체 URL(https://…) 이어야 함 |
 
 ### 본문 구성
 
@@ -179,7 +187,7 @@ import Trouble from '../../components/mdx/Trouble.astro';
 | 하고 싶은 것 | 방법 |
 | --- | --- |
 | 홈에서만 빼기 | `featured: false` |
-| 순서 바꾸기 | `sortDate` 조정 (최신이 앞) |
+| 순서 바꾸기 | `order` 조정 (작을수록 앞). `order` 가 없으면 `sortDate` 최신순 |
 | 완전히 삭제 | 파일 삭제 (+ 커버 이미지 삭제). 이미 공개된 적 있으면 `src/data/redirects.mjs` 에 `'/projects/옛이름/': '/projects/'` 추가 |
 | 파일 이름(URL) 변경 | 공개된 적 있으면 `redirects.mjs` 에 옛 주소 → 새 주소 추가, 커버 이미지 이름도 함께 변경 |
 
@@ -287,7 +295,7 @@ const hello = 'world';
 `npm run verify` 를 실행하면 남은 예시 항목을 알려 줍니다. 현재 남아 있는 것:
 
 - [ ] `src/data/profile.ts` — 이름, 한 줄 소개, 상태, 직무, About, 기술 스택
-- [ ] `src/content/projects/sample-project-02~04.mdx` — 실제 프로젝트로 바꾸거나 삭제
+- [x] `src/content/projects/sample-project-02~04.mdx` — 실제 프로젝트로 교체 (템플릿은 `docs/templates/project.mdx`)
 - [ ] `src/content/blog/2026-09-15-welcome-to-jekyll.md`, `2019-03-23-integrating-razorpay.md` — Jekyll · 테마 기본 글. 삭제 시 `redirects.mjs` 의 해당 줄도 정리
 - [ ] `src/content/projects/gajigaji04-github-io.mdx` — 트러블슈팅 · 회고 섹션 채우기
 

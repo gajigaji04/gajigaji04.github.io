@@ -46,6 +46,16 @@ const projects = defineCollection({
     deploy: z.string().optional(),
     repo: z.url().optional(),
     live: z.string().optional(),
+    /** (선택) 노출 순서. 작을수록 앞. 없으면 order 가 있는 항목 뒤에 sortDate 최신순 */
+    order: z.number().optional(),
+    /** (선택) 공개 릴리스. 카드와 상세 페이지에 버전 · 릴리스 링크 표시 */
+    release: z
+      .object({
+        version: z.string(),
+        url: z.url(),
+        date: z.coerce.date().optional(),
+      })
+      .optional(),
     /** 홈 "selected projects" 에 노출 */
     featured: z.boolean().default(false),
     sample: z.boolean().default(false),

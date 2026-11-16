@@ -25,49 +25,38 @@ export const PROFILE = {
   email: 'gajigaji04@gmail.com',
   avatar: '/assets/bio-photo.jpg',
   /** 홈 개요에 표시. 옆의 현재 시각은 항상 서울(KST) 기준 */
-  location: 'Seoul, Korea',
+  location: 'Korea',
 
-  // ─── 아래는 예시 값입니다 ───────────────────────────────
-  name: { value: '[이름]', sample: true },
-  headline: { value: '웹 개발자 — [어떤 문제를 어떤 방식으로 푸는지 한 줄]', sample: true },
-  status: { value: '[현재 상태 · 예: 구직 중]', sample: true },
-  role: { value: '[직무 · 예: Frontend Developer]', sample: true },
+  /** 표시 이름. 비워 두면 한 줄 소개만 표시됩니다. */
+  name: { value: '' } as Sampled & { value: string },
+  headline: { value: '웹 개발자 — 새로운 기술을 탐구하고 실제 서비스에 적용하며 성장하는 백엔드 개발자' } as Sampled & { value: string },
+  status: { value: '구직 중' },
+  role: { value: 'Backend Developer' },
   /** 이력서 PDF 경로. 예: '/resume.pdf' (public/resume.pdf 에 파일을 두세요). 비어 있으면 버튼이 "준비 중" 상태로 표시됩니다. */
   resumeUrl: '' as string,
 
   /** About — 한 줄씩 bullet 로 표시. **굵게** 로 감싼 부분은 강조됩니다. */
   about: {
-    sample: true,
     points: [
-      '[개발을 대하는 태도를 한 문장으로. 예: **사용자가 체감하는 문제**를 코드로 풀어내는 데 관심이 많습니다.]',
-      '[주요 경험 요약. 예: **React · TypeScript** 기반 프로젝트 **n개**를 기획부터 배포까지 진행했습니다.]',
-      '[최근 집중하는 학습 방식이나 기술. 예: 배운 것을 **블로그**에 기록하며 정리합니다.]',
-      '[협업에서 중요하게 생각하는 점.]',
+      '단순히 동작하는 기능보다 **안정성과 데이터 정합성**까지 고려하는 개발을 지향합니다.',
+      '**Spring Boot** 기반 MSA 프로젝트에서 송금 기능을 개발하며 **동시성 제어, 멱등성, 장애 복구**를 경험했습니다.',
+      '**Java와 Spring 생태계**를 중심으로 학습하며 C 기반 Windows 애플리케이션과 Node.js 프로젝트도 개발하고 있습니다.',
+      '협업에서는 요구사항과 설계 의도를 명확히 공유하고, **테스트와 문서화**를 통해 함께 유지보수할 수 있는 코드를 만드는 것을 중요하게 생각합니다.',
     ],
-  },
+  } as Sampled & { points: string[] },
 };
 
 /**
- * 기술 스택 — 이름만 적으면 아이콘이 자동으로 붙습니다(simple-icons, 빌드 시 조회).
- * 예: 'Docker', 'Vue.js', 'Spring Boot', 'PostgreSQL'. 아이콘이 없는 이름은 텍스트 배지로 표시됩니다.
- * 이름 매칭 규칙과 별칭 추가는 src/lib/tech.ts 참고.
+ * 기술 스택 — 카테고리별로 이름만 적으면 아이콘이 자동으로 붙습니다(simple-icons, 빌드 시 조회).
+ * 아이콘이 없는 이름은 글자 표시로 대체됩니다. 이름 매칭 규칙과 별칭 추가는 src/lib/tech.ts 참고.
  *
- * 현재 목록은 예시입니다. 실제 스택으로 교체한 뒤 STACK_IS_SAMPLE 을 false 로 바꿔 주세요.
+ * 실제 저장소에서 사용이 확인된 기술만 적습니다(2026-11-16 기준 분석).
  */
-export const STACK_IS_SAMPLE = true;
-export const STACK: string[] = [
-  'JavaScript',
-  'TypeScript',
-  'HTML5',
-  'CSS',
-  'React',
-  'Next.js',
-  'Astro',
-  'Tailwind CSS',
-  'Node.js',
-  'Express',
-  'MDX',
-  'Git',
-  'GitHub Actions',
-  'Figma',
+export const STACK_IS_SAMPLE = false;
+export const STACK: { category: string; items: string[] }[] = [
+  { category: 'Backend', items: ['Spring Boot', 'Spring Security', 'Spring Data JPA', 'Node.js', 'Express', 'Prisma', 'Apache Kafka'] },
+  { category: 'Frontend', items: ['React', 'Next.js', 'Vite', 'Tailwind CSS'] },
+  { category: 'Database', items: ['PostgreSQL', 'MySQL', 'Redis'] },
+  { category: 'DevOps & Tools', items: ['Docker', 'GitHub Actions', 'Nginx', 'AWS', 'Prometheus', 'Grafana', 'Git', 'CMake'] },
+  { category: 'Language', items: ['Java', 'C', 'TypeScript', 'JavaScript', 'Python'] },
 ];

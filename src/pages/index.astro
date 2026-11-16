@@ -1,13 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
-import TechIcon from '../components/TechIcon.astro';
 import SampleBadge from '../components/SampleBadge.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import PostCard from '../components/PostCard.astro';
 import { PROFILE, STACK, STACK_IS_SAMPLE } from '../data/profile';
 import { getPosts, getProjects, emph } from '../lib/content';
 import { getGithubActivity } from '../lib/github';
+import { techIcon } from '../lib/tech';
 
 const allProjects = await getProjects();
 const projects = allProjects.filter((p) => p.data.featured).slice(0, 4);
@@ -15,6 +15,14 @@ const allPosts = await getPosts();
 const posts = allPosts.slice(0, 2);
 const gh = await getGithubActivity();
 const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString('ko-KR'));
+const ghUrl = `https://github.com/${PROFILE.github}`;
+// 잔디 위 월 표시 — 그 달 1일이 들어 있는 주에 라벨. 첫 라벨은 다음 라벨과 겹치면 생략
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthMarks = gh.weeks
+  .map((w, col) => ({ col, day: w.find((d) => d.date.endsWith('-01')) ?? (col === 0 ? w[0] : undefined) }))
+  .filter((m) => m.day)
+  .map((m) => ({ col: m.col, label: MONTHS[Number(m.day!.date.slice(5, 7)) - 1] }))
+  .filter((m, i, all) => !(i === 0 && all[1] && all[1].col - m.col < 3));
 ---
 <BaseLayout>
   <div data-pagefind-body data-pagefind-meta="kind:page">
@@ -24,7 +32,7 @@ const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString('ko-KR'
         <div style="min-width: 0">
           <h1>{PROFILE.handle}</h1>
           <p class="tagline">
-            {PROFILE.name.value} · {PROFILE.headline.value} <SampleBadge show={PROFILE.name.sample || PROFILE.headline.sample} />
+            {[PROFILE.name.value, PROFILE.headline.value].filter(Boolean).join(' · ')} <SampleBadge show={!!(PROFILE.name.sample || PROFILE.headline.sample)} />
           </p>
         </div>
       </div>
@@ -34,7 +42,7 @@ const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString('ko-KR'
         <li class="ovi"><span class="bx"><Icon name="pin" class="ico-sm" /></span><span>{PROFILE.location}</span></li>
         <li class="ovi">
           <span class="bx"><Icon name="clock" class="ico-sm" /></span>
-          <span class="mono" style="font-size: 13px"><time data-clock>--:--</time><span class="muted">// KST</span></span>
+          <span class="mono" style="font-size: 13px"><time data-clock>--:--:--</time><span class="muted">// KST</span></span>
         </li>
         <li class="ovi"><span class="bx"><Icon name="mail" class="ico-sm" /></span><a href={`mailto:${PROFILE.email}`}>{PROFILE.email}</a></li>
         <li class="ovi"><span class="bx"><Icon name="link" class="ico-sm" /></span><a href={`https://github.com/${PROFILE.github}`}>github.com/{PROFILE.github}</a></li>
@@ -54,7 +62,7 @@ const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString('ko-KR'
     </section>
 
     <section class="sec" id="about">
-      <h2 class="h2">About <SampleBadge show={PROFILE.about.sample} /></h2>
+      <h2 class="h2">About <SampleBadge show={!!PROFILE.about.sample} /></h2>
       <ul class="about">
         {PROFILE.about.points.map((t) => <li><span set:html={emph(t)} /></li>)}
       </ul>
@@ -62,21 +70,47 @@ const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString('ko-KR'
 
     <section class="sec" id="stack">
       <h2 class="h2">Stack <SampleBadge show={STACK_IS_SAMPLE} /></h2>
-      <ul class="stack" aria-label="기술 스택">
-        {STACK.map((name) => <li><TechIcon name={name} size={32} /></li>)}
-      </ul>
+      {
+        STACK.map((group) => (
+          <div class="stack-group">
+            <h3 class="stack-cat">{group.category}</h3>
+            <ul class="stack" aria-label={`${group.category} 기술`}>
+              {group.items.map((name) => {
+                const icon = techIcon(name);
+                return (
+                  <li>
+                    {icon.path ? (
+                      <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true"><path d={icon.path} /></svg>
+                    ) : (
+                      <span class="stack-ph" aria-hidden="true">{name.slice(0, 2)}</span>
+                    )}
+                    <span class="stack-name">{name}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))
+      }
     </section>
 
     <section class="sec" id="github" data-pagefind-ignore>
-      <h2 class="h2">GitHub Contributions</h2>
+      <div class="h2-row">
+        <h2 class="h2">GitHub Contributions</h2>
+        <a class="h2-link" href={ghUrl}>@{PROFILE.github}<Icon name="external" class="ico-xs" /></a>
+      </div>
       <div class="heat-scroll" data-heat-scroll>
-        <div class="heat" role="img" aria-label={gh.source === 'api' ? `최근 1년 GitHub 기여 ${fmt(gh.total)}회` : '최근 1년 GitHub 기여 그래프 (예시 데이터)'}>
-          {gh.weeks.flat().map((d) => <i class={`lv${d.level}`} title={gh.source === 'api' ? `${d.date} · ${d.count}` : undefined}></i>)}
+        <div class="heat-months" aria-hidden="true" style={`grid-template-columns: repeat(${gh.weeks.length}, 10px)`}>
+          {monthMarks.map((m) => <span style={`grid-column: ${m.col + 1} / span 3`}>{m.label}</span>)}
+        </div>
+        <div class="heat" role="img" aria-label={gh.source === 'api' ? `최근 1년 GitHub 기여 ${fmt(gh.total)}회` : '최근 1년 GitHub 기여 그래프 (데이터 없음)'} data-heat={gh.source}>
+          {gh.weeks.flat().map((d) => <i class={`lv${d.level}`} data-d={d.date} data-c={d.count}></i>)}
         </div>
       </div>
+      <div class="heat-tip" role="tooltip" hidden data-heat-tip></div>
       <div class="gh-meta">
         <span>
-          {gh.source === 'api' ? <><b>{fmt(gh.total)}</b> contributions in the last year</> : <>예시 데이터 · 배포 빌드에서 GitHub API로 갱신 <SampleBadge /></>}
+          {gh.source === 'api' ? <><b>{fmt(gh.total)}</b> contributions in the last year</> : <>기여 데이터를 불러오지 못해 빈 그래프로 표시합니다 · 배포 빌드에서 GitHub API로 갱신 <SampleBadge /></>}
         </span>
         <span class="legend" aria-hidden="true">Less <i class="lv0"></i><i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i> More</span>
       </div>
@@ -102,15 +136,51 @@ const fmt = (n: number | null) => (n === null ? '—' : n.toLocaleString('ko-KR'
 </BaseLayout>
 
 <script>
-  // 서울 현재 시각
+  // 한국 현재 시각(KST) — 매초 갱신. 방문자의 시간대와 무관하게 Asia/Seoul 기준
   const el = document.querySelector<HTMLTimeElement>('[data-clock]');
-  const tick = () => {
-    if (!el) return;
-    el.textContent = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
-  };
-  tick();
-  setInterval(tick, 30_000);
+  if (el) {
+    const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+    const tick = () => {
+      const now = new Date();
+      el.textContent = fmt.format(now);
+      el.dateTime = now.toISOString();
+      // 다음 정초에 맞춰 갱신 (setInterval 누적 오차 방지)
+      setTimeout(tick, 1000 - (Date.now() % 1000));
+    };
+    tick();
+  }
   // 기여 그래프는 최근(오른쪽)부터 보이도록
   const s = document.querySelector<HTMLElement>('[data-heat-scroll]');
   if (s) s.scrollLeft = s.scrollWidth;
+
+  // 기여 그래프 툴팁 — 마우스 오버와 터치(탭) 모두 동작. 칸마다 title 을 두지 않고 툴팁 하나를 옮겨 씀
+  const heat = document.querySelector<HTMLElement>('[data-heat]');
+  const tip = document.querySelector<HTMLElement>('[data-heat-tip]');
+  if (heat && tip) {
+    const live = heat.dataset.heat === 'api';
+    const day = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', timeZone: 'UTC' });
+    const hide = () => (tip.hidden = true);
+    const show = (cell: HTMLElement) => {
+      const n = Number(cell.dataset.c);
+      const d = day.format(new Date(`${cell.dataset.d}T00:00:00Z`));
+      tip.textContent = live ? `${d} · ${n ? `기여 ${n}회` : '기여 없음'}` : `${d} · 데이터 없음`;
+      tip.hidden = false;
+      const r = cell.getBoundingClientRect();
+      const w = tip.offsetWidth;
+      tip.style.left = `${Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8)}px`;
+      tip.style.top = `${r.top - tip.offsetHeight - 6}px`;
+    };
+    heat.addEventListener('pointerover', (e) => {
+      const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-d]');
+      if (cell) show(cell);
+    });
+    heat.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'mouse') hide();
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (!heat.contains(e.target as Node)) hide();
+    });
+    s?.addEventListener('scroll', hide, { passive: true });
+    window.addEventListener('scroll', hide, { passive: true });
+  }
 </script>
