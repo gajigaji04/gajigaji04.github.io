@@ -84,7 +84,7 @@ URL 은 파일명에서 날짜를 뺀 값입니다: `2026-11-15-hello.md` → `/
 - `<Adr id title status open context decision consequence />` — 기술적 의사결정 기록
 - `<Trouble problem cause fix />` — 트러블슈팅
 
-`featured: true` 인 프로젝트가 홈의 Projects 섹션에 최대 4개 노출됩니다. `repo`(GitHub 주소)와 `live`(배포 주소)를 적으면 카드에 링크 아이콘이 나타납니다.
+`featured: true` 인 프로젝트가 홈의 Projects 섹션에 최대 4개 노출됩니다. `hidden: true` 를 넣으면 파일은 남긴 채 사이트 전체(목록 · 홈 · 상세 · 검색 · sitemap)에서 숨겨집니다. `repo`(GitHub 주소)와 `live`(배포 주소)를 적으면 카드에 링크 아이콘이 나타납니다.
 
 ## GitHub 활동 그래프
 

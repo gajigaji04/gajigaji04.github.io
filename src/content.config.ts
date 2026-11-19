@@ -56,6 +56,8 @@ const projects = defineCollection({
         date: z.coerce.date().optional(),
       })
       .optional(),
+    /** 사이트 전체(목록 · 홈 · 상세 · 검색 · sitemap)에서 숨김. 파일은 남겨 둠 */
+    hidden: z.boolean().default(false),
     /** 홈 "selected projects" 에 노출 */
     featured: z.boolean().default(false),
     sample: z.boolean().default(false),

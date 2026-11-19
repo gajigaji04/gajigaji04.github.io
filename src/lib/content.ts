@@ -9,9 +9,9 @@ export async function getPosts(): Promise<Post[]> {
   return posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 }
 
-/** 최근순 프로젝트 */
+/** 최근순 프로젝트. hidden 은 제외. */
 export async function getProjects(): Promise<Project[]> {
-  const items = await getCollection('projects');
+  const items = await getCollection('projects', ({ data }) => !data.hidden);
   // order(작을수록 앞) → 없으면 뒤로, 같으면 sortDate 최신순
   const rank = (p: Project) => p.data.order ?? Number.POSITIVE_INFINITY;
   return items.sort((a, b) => rank(a) - rank(b) || b.data.sortDate.valueOf() - a.data.sortDate.valueOf());
