@@ -59,6 +59,7 @@ $RECYCLE.BIN/
 *~
 # Claude Code 개인 설정 (공유 규칙은 CLAUDE.md 로 커밋)
 .claude/settings.local.json
+CLAUDE.md
 
 # ── 이전 Jekyll 사이트 잔여물 (더 이상 사용 안 함) ───────────
 _site/

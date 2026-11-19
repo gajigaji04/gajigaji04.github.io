@@ -128,13 +128,14 @@ release:                      # (선택) 공개 릴리스 — 카드에 버전, 
   url: https://github.com/<owner>/<repo>/releases/tag/v1.0.1
   date: 2026-11-14
 featured: true                # 홈에 노출 (정렬 순서대로 최대 4개)
+# hidden: true                # (선택) 사이트 전체에서 숨김. 파일은 그대로 둠
 ---
 ```
 
 | 필드 | 필수 | 메모 |
 | --- | --- | --- |
 | `code`, `name`, `summary`, `role`, `team`, `period`, `sortDate`, `stack`, `status` | O | 빠지면 빌드 오류 |
-| `kind`, `deploy`, `repo`, `live`, `order`, `release`, `featured` | | `repo` · `release.url` 은 전체 URL(https://…) 이어야 함 |
+| `kind`, `deploy`, `repo`, `live`, `order`, `release`, `featured`, `hidden` | | `repo` · `release.url` 은 전체 URL(https://…) 이어야 함 |
 
 ### 본문 구성
 
@@ -187,6 +188,7 @@ import Trouble from '../../components/mdx/Trouble.astro';
 | 하고 싶은 것 | 방법 |
 | --- | --- |
 | 홈에서만 빼기 | `featured: false` |
+| 사이트 전체에서 숨기기 | `hidden: true` (목록 · 홈 · 상세 페이지 · 검색 · sitemap 에서 제외, 지우면 다시 노출) |
 | 순서 바꾸기 | `order` 조정 (작을수록 앞). `order` 가 없으면 `sortDate` 최신순 |
 | 완전히 삭제 | 파일 삭제 (+ 커버 이미지 삭제). 이미 공개된 적 있으면 `src/data/redirects.mjs` 에 `'/projects/옛이름/': '/projects/'` 추가 |
 | 파일 이름(URL) 변경 | 공개된 적 있으면 `redirects.mjs` 에 옛 주소 → 새 주소 추가, 커버 이미지 이름도 함께 변경 |
