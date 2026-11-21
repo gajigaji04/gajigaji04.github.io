@@ -296,10 +296,9 @@ const hello = 'world';
 
 `npm run verify` 를 실행하면 남은 예시 항목을 알려 줍니다. 현재 남아 있는 것:
 
-- [ ] `src/data/profile.ts` — 이름, 한 줄 소개, 상태, 직무, About, 기술 스택
+- [x] `src/data/profile.ts` — 이름, 한 줄 소개, 상태, 직무, About, 기술 스택
 - [x] `src/content/projects/sample-project-02~04.mdx` — 실제 프로젝트로 교체 (템플릿은 `docs/templates/project.mdx`)
 - [ ] `src/content/blog/2026-09-15-welcome-to-jekyll.md`, `2019-03-23-integrating-razorpay.md` — Jekyll · 테마 기본 글. 삭제 시 `redirects.mjs` 의 해당 줄도 정리
-- [ ] `src/content/projects/gajigaji04-github-io.mdx` — 트러블슈팅 · 회고 섹션 채우기
 
 ---
 

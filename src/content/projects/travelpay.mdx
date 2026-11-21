@@ -1,0 +1,75 @@
+---
+code: P-13
+name: TravelPay
+summary: 여행자를 위한 충전 · 송금 · 환전 · 결제 통합 지갑 플랫폼. MSA 와 공용 원장 위에서 송금 멱등성 · 동시성 · 장애 복구를 맡았고, 프론트엔드 전체를 만들었습니다. 팀 프로젝트 이후 송금 완료 알림(Kafka)을 이어서 개발하고 있습니다.
+role: 팀 프로젝트 · 프론트엔드 전체, 송금 API · 동시성 · 장애 대응
+team: 5명
+period: 2026.10 — 진행 중
+sortDate: 2026-11-21
+stack: [Java, Spring Boot, Spring Security, Spring Cloud Gateway, PostgreSQL, Redis, Apache Kafka, React, TypeScript, Vite, AWS, Terraform, Docker, GitHub Actions, Prometheus, Grafana, k6]
+status: 진행 중
+kind: 팀 프로젝트 · MSA
+deploy: AWS ECS · RDS · ALB (백엔드) · Vercel (프론트엔드)
+repo: https://github.com/gajigaji04/travelpay
+live: https://travelpay.store
+order: 4
+featured: true
+---
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+import Trouble from '../../components/mdx/Trouble.astro';
+
+## Overview
+
+원화 충전, 회원 간 송금, 외화 환전, 가맹점 결제를 하나의 지갑에서 제공하는 5인 팀 프로젝트입니다.
+응답이 유실되거나 거래가 동시에 몰려도 잔액과 거래 상태가 어긋나지 않도록, 모든 자금 이동을 **공용 원장에 한 번만** 기록하고 결과를 모르는 거래는 다시 처리해 확정합니다. 끝내 확정하지 못한 거래는 대사와 운영자 보정으로 마무리합니다.
+
+저는 **프론트엔드 전체와 송금**(API · 상태 관리 · 멱등성 · 동시성 · 장애 대응)을 맡았습니다. 팀 프로젝트가 끝난 뒤에는 개인 저장소에서 **송금 완료 알림**(Outbox → Kafka → 화면 알림 · Slack)을 이어서 개발하고 있습니다.
+
+- 백엔드: [gajigaji04/travelpay](https://github.com/gajigaji04/travelpay) (팀 저장소 [dont-worrys/travelpay](https://github.com/dont-worrys/travelpay) 에서 이어 개발)
+- 프론트엔드: [dont-worrys/travelpay-front](https://github.com/dont-worrys/travelpay-front)
+
+## 주요 기능
+
+- **사용자 · 인증** — Redis 세션 인증, CSRF 보호, 로그인 시도 제한, 관리자 회원 관리 · 세션 강제 종료
+- **지갑 · 충전** — 통화별 지갑, 은행 계좌에서 원화 충전(실패 시 환불), 충전 대사 · 관리자 보정
+- **송금** — 회원 간 통화별 송금, 상대방 마스킹 이름 표시, 송금 완료 화면 알림 · Slack 알림
+- **환전 · 환율** — 견적 기반 환전, 목표 환율 도달 시 자동 체결되는 예약 환전
+- **결제 · 정산** — 가맹점 결제, 부분 환불, 판매 대금 정산
+- **원장** — 모든 자금 이동을 복식부기(차변 · 대변)로 기록하는 공용 원장
+
+## Technical Details
+
+제가 맡은 부분 위주로 정리했습니다.
+
+- **중복 송금 방지** — `Idempotency-Key`, DB UNIQUE 제약, 저장된 요청 값 비교로 같은 송금이 두 번 처리되지 않게 했습니다.
+- **동시 송금** — 비관적 잠금, 계정 ID 기준 잠금 순서 고정, DB 잔액 제약으로 교착과 초과 출금을 막았습니다.
+- **결과 불명 처리** — 원장 타임아웃 · 5xx 는 실패로 단정하지 않고 PROCESSING 으로 둔 뒤 같은 reference 로 복구합니다. 재시도 5회를 넘으면 MANUAL_REVIEW 로 넘겨 원장 거래와 대조해 확정합니다.
+- **프론트엔드 금전 요청** — 결과를 모르면 같은 키 · 같은 본문으로만 재요청하고 입력을 잠가 화면에서도 중복 거래가 생기지 않게 했습니다. Vite · React 19 · TypeScript, 모든 API 는 Gateway 를 거칩니다.
+- **송금 완료 알림** — 송금 상태 변경과 같은 트랜잭션에 Outbox 를 기록해 Kafka 로 발행하고, user-service 가 eventId 로 중복을 걸러 보낸 · 받는 사람 화면 알림과 Slack 알림을 남깁니다. 알림은 송금 처리와 분리되어 Kafka 장애가 송금에 영향을 주지 않습니다.
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'React', desc: 'Vercel · 세션 · CSRF' },
+    { name: 'Gateway', desc: 'Spring Cloud Gateway · Eureka' },
+    { name: 'Services', desc: '회원 · 지갑 · 결제 · 환전 · 송금' },
+    { name: 'Ledger', desc: '공용 원장 · 복식부기', highlight: true },
+    { name: 'PostgreSQL', desc: 'AWS RDS' },
+  ]}
+  note="8개 MSA 서비스를 AWS ECS on EC2 에 롤링 업데이트로 배포하고, 인프라는 Terraform 으로 관리합니다. Redis 는 세션 · 캐시, Kafka 는 충전 SAGA 와 송금 완료 알림에 씁니다."
+/>
+
+## Trouble Shooting
+
+<Trouble
+  problem="수취인이 한 명에게 몰리면 송금 처리량이 떨어졌습니다."
+  cause="원장 계정 잠금을 쥔 구간에서 DB 왕복이 여러 번 일어나 잠금 대기가 길어졌습니다."
+  fix="원장에 Hibernate JDBC batch 를 적용해 성공 TPS 를 약 13% 높이고 원장 응답 시간을 약 18% 줄였습니다."
+/>
+
+<Trouble
+  problem="원장 정지 · 응답 유실 · 동시 요청 상황에서 잔액이 어긋날 위험이 있었습니다."
+  cause="원장 호출 결과를 모르는 상태에서 실패로 처리하거나 다시 보내면 이중 차감이 생길 수 있습니다."
+  fix="결과 불명 상태 · 복구 스케줄러 · 서킷 브레이커를 도입하고, E2E 장애 시나리오 12가지에서 이중 차감 · 음수 잔액 · 대사 위반 0건을 확인했습니다."
+/>

@@ -14,6 +14,7 @@
 | 문서 | 내용 |
 | --- | --- |
 | [docs/CONTENT_GUIDE.md](docs/CONTENT_GUIDE.md) | **프로필 · 프로젝트 · 블로그 추가/수정 방법**, 커밋하면 안 되는 파일 |
+| [docs/FILES.md](docs/FILES.md) | **무엇을 바꾸려면 어느 파일을 열어야 하는지** (파일 위치 안내) |
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | 디자인 · 코드 · 콘텐츠 · 커밋 메시지 규칙 |
 | [docs/BRANCHING.md](docs/BRANCHING.md) | 브랜치 규칙, Claude 작업 요청 흐름, 기존 브랜치 정리 |
 | [CLAUDE.md](CLAUDE.md) | Claude 가 이 저장소에서 작업할 때 따르는 규칙 |

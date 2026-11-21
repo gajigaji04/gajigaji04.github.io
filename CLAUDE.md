@@ -11,6 +11,7 @@ gajigaji04 의 개인 포트폴리오 겸 기술 블로그. Astro 7 정적 사�
   - 디자인은 **미니멀**: Zinc 무채색, 강조색 금지(진행 중 초록 점만 예외), 장식(격자·그라데이션·세로선·굵은 테두리) 금지
   - 색은 `src/styles/global.css` 토큰만 사용, 다크/라이트 둘 다 확인
   - 스크립트는 `data-*` 속성으로 요소를 찾음 (클래스는 스타일 전용)
+- 어느 파일을 고쳐야 할지는 `docs/FILES.md` 를 봅니다. 파일을 추가 · 이동하면 이 문서도 갱신합니다.
 - 파일을 지우거나 이름을 바꾸기 전에 참조를 검색하고, 글 slug 를 바꾸면 `src/data/redirects.mjs` 를 갱신합니다.
 - 실제 정보가 없는 곳은 지어내지 말고 `[대괄호]` + `sample: true` 로 표시합니다.
 - 응답과 문서, 주석은 한국어로 씁니다.
@@ -49,6 +50,19 @@ npm run preview  # 빌드 결과 확인 (검색 포함)
    - 예시 글 2편(Jekyll/테마 기본 글, `npm run verify` 경고) 교체 또는 삭제 — 삭제 시 `redirects.mjs` 도 정리
 
 ## 작업 기록
+
+### 2026-11-22 — 파일 위치 안내 문서 추가 (`feat/astro-portfolio-redesign`, 미커밋)
+
+- **요청**: 파일 수정 시 위치를 찾기 어려워 안내 문서 요청
+- **추가**: `docs/FILES.md` — 하고 싶은 일 → 파일 표, 폴더 지도, 고칠 때 함께 확인할 것. README 문서 표 · CLAUDE.md 작업 규칙에 링크
+- **정리**: `docs/CONTENT_GUIDE.md` 5절 체크리스트에서 숨긴 gajigaji04.github.io 항목 삭제, 이미 끝난 `profile.ts` 항목 완료 표시
+
+### 2026-11-22 — Spring Delivery Mini 갱신, TravelPay 추가 (`feat/astro-portfolio-redesign`, 미커밋)
+
+- **Spring Delivery Mini(P-02)**: 저장소 README(2026-11-21 기준) 반영 — 토스페이먼츠 결제 · 소셜 로그인 · SSE 실시간 주문 알림 · React 화면, 테스트 108클래스 946건, 트러블슈팅(SSE 커넥션 점유, Redis DNS 지연) 추가. `live: https://spring-delivery-mini.vercel.app` (사용자가 준 `…-h74uq800s-…vercel.app` 은 Vercel 로그인 보호가 걸린 프리뷰 주소라 쓰지 않음). 백엔드는 아직 미배포
+- **TravelPay(P-13, 신규)**: 5인 팀 MSA 프로젝트, 담당은 프론트엔드 전체 · 송금. `repo` 는 개인 포크 `gajigaji04/travelpay`(팀 저장소 `dont-worrys/travelpay` 보다 14커밋 앞섬, 송금 완료 알림), 본문에 프론트 `dont-worrys/travelpay-front` 링크. `live: https://travelpay.store`, `order: 4`, `featured: true` → 홈 대표 프로젝트 4개
+- **검증**: `npm run build` · `npm run verify` 통과, 다크/라이트 화면 확인
+- **추가 요청**: gajigaji04.github.io(P-12) `hidden: true` → 프로젝트 8개. 이미 공개된 페이지지만 앞서 숨긴 4개와 같이 리다이렉트는 두지 않음(배포 후 404). Spring Delivery Mini 커버 `src/assets/covers/projects/spring-delivery-mini.png` = Vercel 랜딩 첫 화면 캡처(1440×900, 라이트). TravelPay 커버 `travelpay.png` = https://www.travelpay.store 첫 화면 캡처(사용자가 준 `travelpay-front-d62tlhjof-…vercel.app` 도 로그인 보호 프리뷰 주소라 공개 도메인 사용)
 
 ### 2026-11-19 — 포트폴리오에서 뺄 프로젝트 숨김 (`feat/astro-portfolio-redesign`, 미커밋)
 
