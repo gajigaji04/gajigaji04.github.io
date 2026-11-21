@@ -1,16 +1,17 @@
 ---
 code: P-02
 name: Spring Delivery Mini
-summary: 주문 · 결제부터 수수료 · 일 정산 · 환불까지 다루는 배달 서비스 백엔드. 결제 멱등성, Redis 분산 락, Transactional Outbox 와 측정 기반 쿼리 최적화를 구현했습니다.
-role: 개인 프로젝트 · 백엔드 설계 · 개발
+summary: 주문 · 결제부터 수수료 · 일 정산 · 환불까지 다루는 배달 서비스. 토스페이먼츠 결제 연동, 결제 멱등성, Transactional Outbox, SSE 실시간 주문 알림과 측정 기반 쿼리 최적화를 구현하고 고객 · 사장님 · 관리자 화면까지 만들었습니다.
+role: 개인 프로젝트 · 백엔드 설계 · 개발, 프론트엔드
 team: 1명
 period: 2026.10 — 진행 중
-sortDate: 2026-11-15
-stack: [Java, Spring Boot, Spring Security, Spring Data JPA, PostgreSQL, Flyway, Redis, Apache Kafka, Docker, Testcontainers, Prometheus, Grafana, GitHub Actions]
+sortDate: 2026-11-21
+stack: [Java, Spring Boot, Spring Security, Spring Data JPA, PostgreSQL, Flyway, Redis, Apache Kafka, React, TypeScript, Vite, Docker, Testcontainers, Prometheus, Grafana, GitHub Actions]
 status: 진행 중
 kind: 온보딩 과제에서 확장한 개인 프로젝트
-deploy: Docker Compose (로컬)
+deploy: Vercel (프론트엔드) · Docker Compose (백엔드, 로컬)
 repo: https://github.com/gajigaji04/Spring-Delivery-mini
+live: https://spring-delivery-mini.vercel.app
 order: 2
 featured: true
 ---
@@ -19,36 +20,39 @@ import Trouble from '../../components/mdx/Trouble.astro';
 
 ## Overview
 
-단기 심화 온보딩 주차 과제로 시작한 미니 배달 서비스입니다. 과제 범위(회원 · 메뉴 · 주문 · 결제)를 마친 뒤, 이슈 단위로 **수수료 · 일 정산 · 환불 · 이월 · 정산 감사 이력 · 재집계**와 Redis · Kafka 기반 비동기 처리까지 확장했습니다.
-"동작하는 기능"을 넘어 **중복 결제, 동시 요청, 장애 상황에서도 데이터가 어긋나지 않게** 만드는 것을 목표로 했습니다.
+단기 심화 온보딩 주차 과제로 시작한 미니 배달 서비스입니다. 과제 범위(회원 · 메뉴 · 주문 · 결제)를 마친 뒤, 이슈 단위로 **수수료 · 일 정산 · 환불 · 이월 · 정산 감사 이력 · 재집계**, Redis · Kafka 기반 비동기 처리, **토스페이먼츠 결제 연동**, 사장님 **실시간 주문 알림**, 고객 · 사장님 · 관리자 **웹 화면**까지 확장했습니다.
+돈이 오가는 흐름(결제 → 정산 → 환불)에서 **중복 · 유실 없이 기록을 맞추는 것**을 목표로 했습니다.
 
 ## 주요 기능
 
-- **회원 · 인증** — JWT 인증, 역할 3종 기반 권한 분리(Spring Security)
-- **매장 · 메뉴 · 주문 · 결제** — 주문 상태 전이와 수수료 규칙을 엔티티에 두고 서비스에서 조합
-- **정산** — 스케줄러 기반 일 정산 집계, 환불 반영 · 이월, 정산 상태 변경 이력, 관리자 재집계
-- **이벤트 발행 · 알림** — Transactional Outbox → Kafka, 소비 실패 시 DLT 재처리
-- **운영** — Flyway 마이그레이션(V1~V14), 데이터 보관 기간 정리, TraceId 로깅, Prometheus · Grafana 모니터링, springdoc OpenAPI 문서
+- **회원 · 인증** — JWT(Access 15분) + Refresh Token(HttpOnly 쿠키, 재발급마다 교체 · 재사용 감지 시 전체 폐기), 카카오 · 구글 소셜 로그인, 고객 → 사장님 전환 신청과 관리자 승인
+- **매장 · 메뉴 · 주문** — 주문 당시 메뉴 이름 · 단가 스냅샷, 상태 전이(결제 → 수락 → 배달완료), 배송 주소 검증
+- **결제** — 토스페이먼츠 결제창 연동(테스트 모드), 전액 · 부분 환불, 토스 없이 장애를 재현하는 가짜 PG 모드
+- **정산** — 배달완료 기준 일 정산, 관리자 확정 → 지급, 환불은 다음 정산에서 차감 · 이월, 감사 이력과 누락분 재집계
+- **이벤트 · 알림** — Transactional Outbox → Kafka, 멱등 Consumer, DLT 재처리 CLI, 사장님 화면 SSE 실시간 주문 알림
+- **화면** — React 19 · TypeScript 로 만든 랜딩 · 고객 주문 · 사장님 주문 처리 · 정산 화면 (Vercel 배포)
+- **운영** — Flyway 마이그레이션, prod 프로필 필수 값 점검, TraceId 로깅, Prometheus · Grafana 대시보드와 알림 규칙
 
 ## Technical Details
 
-- **결제 멱등성** — `Idempotency-Key` 로 첫 응답을 재전송합니다(같은 키에 다른 요청 422, 처리 중 409, Redis 장애 시 503). 중복 결제 차단 자체는 DB 가 맡도록 주문 행 잠금과 `payments.order_id` UNIQUE 제약을 두었고, 멱등 기록을 결제와 **같은 트랜잭션**에 DB 로도 저장해 Redis 기록이 사라져도 재전송할 수 있게 했습니다.
-- **Redis 분산 락** — `SET NX PX` 로 획득하고, Lua 스크립트로 **토큰이 일치할 때만 해제**합니다. Redis 장애 시에는 실행을 건너뛰고 실패 메트릭을 남깁니다.
-- **Transactional Outbox** — `FOR UPDATE ... SKIP LOCKED` 로 여러 인스턴스가 같은 이벤트를 중복 발행하지 않게 하고, 같은 주문의 앞선 이벤트가 대기 중이면 뒤 이벤트를 막아 **주문 단위 순서를 보장**합니다(메시지 키 = 주문 ID). 실패 시 지수 백오프 후 FAILED 처리, Consumer 는 eventId 로 중복을 제거합니다.
+- **PG 결제 결과 불명 처리** — 승인 · 취소가 시간 초과되면 실패로 단정하지 않고 조회 API 로 확인합니다. 그래도 모르면 503 을 돌려주고 화면은 결제창 대신 **같은 요청만** 재시도합니다. 토스 멱등 키와 결제 키 UNIQUE 로 승인은 한 번, 부분 취소는 재시도 전 잔액을 확인해 중복 환불을 막았습니다.
+- **결제 멱등성** — `Idempotency-Key` 로 첫 응답을 재전송합니다(같은 키에 다른 요청 422, Redis 장애 시 503). 중복 결제 차단 자체는 DB UNIQUE 제약이 맡고, 멱등 기록을 결제와 **같은 트랜잭션**에 DB 로도 저장해 Redis 기록이 사라져도 재전송할 수 있게 했습니다.
+- **정산** — 확정 · 지급된 기록은 고치지 않고 환불을 다음 정산에서 차감 · 이월합니다. 회계 항등식(지급액 = 판매 정산액 − 환불 정산액 + 미차감 이월분)을 테스트로 고정했습니다.
+- **Transactional Outbox** — `FOR UPDATE ... SKIP LOCKED` 로 중복 발행을 막고 주문 단위 순서를 보장합니다. Kafka 가 멈춰도 결제는 성공하고 이벤트는 회복 후 발행됩니다.
 - **keyset 페이징** — offset 대신 `(store_id, id)` 인덱스를 타는 keyset 방식으로 깊은 페이지 조회를 개선했습니다.
-- **테스트** — 단위 · 통합 테스트 약 70개 클래스. Testcontainers(PostgreSQL · Kafka)로 실제 인프라에 가깝게 검증하고, 결제 · 수수료율 변경 동시성 통합 테스트를 둡니다. GitHub Actions 에서 `./gradlew build` 로 실행합니다.
-- **부하 측정** — k6 스크립트로 목록 API 를 측정하고 결과를 문서로 남겼습니다.
+- **테스트** — 108개 클래스 946건. Testcontainers(PostgreSQL · Redis · Kafka)로 실제 인프라에 가깝게 검증하고, k6 부하 테스트와 Prometheus 알림 규칙 발동까지 확인했습니다.
 
 ## Architecture
 
 <ArchFlow
   nodes={[
-    { name: 'Controller', desc: 'REST · JWT 필터' },
-    { name: 'Service', desc: '트랜잭션 · 멱등성 · 락' },
+    { name: 'React', desc: '고객 · 사장님 화면' },
+    { name: 'Controller', desc: 'REST · JWT 필터 · SSE' },
+    { name: 'Service', desc: '트랜잭션 · 멱등성 · PG 연동' },
     { name: 'Entity', desc: '상태 전이 · 수수료 규칙', highlight: true },
     { name: 'PostgreSQL', desc: 'JPA · Flyway' },
   ]}
-  note="Redis(멱등 키 · 분산 락)와 Kafka(Outbox 발행 · 알림 소비)를 보조 인프라로 두고, Docker Compose 로 함께 실행합니다."
+  note="Redis(멱등 키 · 분산 락)와 Kafka(Outbox 발행 · 알림 소비)를 보조 인프라로 두고, 결제는 토스페이먼츠 테스트 모드와 연동합니다."
 />
 
 패키지는 `controller · service · entity · repository` 계층에 `event`(Outbox · Kafka), `lock`, `scheduler`(정산), `maintenance`(보관 기간 정리), `logging` 을 더해 구성했습니다.
@@ -56,27 +60,27 @@ import Trouble from '../../components/mdx/Trouble.astro';
 ## Trouble Shooting
 
 <Trouble
-  problem="점주 주문 목록 API 가 평균 15,982ms 걸렸습니다."
-  cause="페이지네이션 없이 전체를 불러오며 N+1 쿼리가 발생해 요청 한 번에 쿼리가 7,507번 실행되고 있었습니다."
-  fix="페이지네이션을 적용하고 N+1 을 제거한 뒤, generic plan EXPLAIN 으로 (store_id, id) 인덱스 근거를 확인해 추가했습니다. 평균 19.0ms, 쿼리 3번으로 줄었습니다."
+  problem="점주 주문 목록 API 가 주문 30만 건에서 평균 15,982ms 걸렸습니다."
+  cause="페이지네이션 없이 전체를 불러오며 주문 항목을 건마다 조회하는 N+1 쿼리가 발생했습니다."
+  fix="Slice 페이징과 IN 일괄 조회로 쿼리를 3번으로 고정하고, generic plan EXPLAIN 으로 근거를 확인한 인덱스만 추가해 19.0ms 로 줄였습니다. 뒤쪽 페이지는 keyset 페이징으로 426ms → 17.6ms."
 />
 
 <Trouble
-  problem="점주 주문 목록의 마지막 페이지 조회가 538ms 로 느렸습니다."
-  cause="offset 페이징은 앞쪽 행을 모두 건너뛰며 읽기 때문에 페이지가 깊어질수록 느려집니다."
-  fix="keyset 페이징으로 바꿔 17.6ms 로 줄였습니다. k6 를 Docker 안에서 돌리면 수치가 왜곡되어 호스트에서 직접 측정했습니다."
+  problem="사장님 화면에 SSE 실시간 알림을 붙이자 연결 수만큼 DB 커넥션이 점유됐습니다."
+  cause="open-in-view 가 응답이 끝날 때까지 커넥션을 쥐는데, SSE 응답은 최대 10분 동안 끝나지 않습니다."
+  fix="open-in-view 를 끄고 같은 인터셉터를 SSE 경로만 빼고 다시 등록했습니다. 연결 유지 중 활성 커넥션 0 을 통합 테스트와 Prometheus 로 확인했습니다."
+/>
+
+<Trouble
+  problem="Redis 타임아웃을 1초로 뒀는데 Redis 장애 시 503 응답이 4~9초 걸렸습니다."
+  cause="Lettuce 가 쓰는 Netty 자체 DNS 조회기가 멈춘 컨테이너 이름을 약 4초 동안 조회했고, connect-timeout 은 TCP 연결에만 적용됐습니다."
+  fix="DNS 조회기의 질의 상한을 connect-timeout(1초)과 같게 교체해 1.02초로 줄였습니다."
 />
 
 <Trouble
   problem="Kafka 에 접속할 수 없을 때 Outbox 발행 주기가 길게 멈추고 행 잠금이 오래 유지됐습니다."
   cause="이벤트마다 max.block.ms(5초)만큼 대기하면서 SKIP LOCKED 로 잡은 행 잠금을 계속 쥐고 있었습니다."
-  fix="배치 전체에 send-timeout 을 한 번만 적용하고, 첫 전송이 실패하면 그 주기의 나머지 이벤트는 다음 주기로 미루도록 바꿨습니다."
+  fix="첫 전송이 실패하면 그 주기의 나머지 이벤트는 다음 주기로 미루도록 바꿨습니다."
 />
 
-<Trouble
-  problem="DLT 로 보낸 실패 메시지를 재처리 Consumer 가 받지 못했습니다."
-  cause="Spring Kafka 4 에서 DLT 기본 토픽 이름이 {topic}-dlt 로 바뀌었습니다."
-  fix="DLT 토픽 이름을 설정에서 직접 지정했습니다."
-/>
-
-남은 과제: Redis 고가용성, 실제 이메일 · SMS 연동, Alertmanager 연동, 배포 환경 확정.
+남은 과제: 백엔드 배포 환경 확정, Redis 고가용성, 토스 미기록 승인 대사, 서버 여러 대에서의 SSE 전달(Redis Pub/Sub), Alertmanager 연동.

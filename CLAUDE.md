@@ -50,6 +50,13 @@ npm run preview  # 빌드 결과 확인 (검색 포함)
 
 ## 작업 기록
 
+### 2026-11-22 — Spring Delivery Mini 갱신, TravelPay 추가 (`feat/astro-portfolio-redesign`, 미커밋)
+
+- **Spring Delivery Mini(P-02)**: 저장소 README(2026-11-21 기준) 반영 — 토스페이먼츠 결제 · 소셜 로그인 · SSE 실시간 주문 알림 · React 화면, 테스트 108클래스 946건, 트러블슈팅(SSE 커넥션 점유, Redis DNS 지연) 추가. `live: https://spring-delivery-mini.vercel.app` (사용자가 준 `…-h74uq800s-…vercel.app` 은 Vercel 로그인 보호가 걸린 프리뷰 주소라 쓰지 않음). 백엔드는 아직 미배포
+- **TravelPay(P-13, 신규)**: 5인 팀 MSA 프로젝트, 담당은 프론트엔드 전체 · 송금. `repo` 는 개인 포크 `gajigaji04/travelpay`(팀 저장소 `dont-worrys/travelpay` 보다 14커밋 앞섬, 송금 완료 알림), 본문에 프론트 `dont-worrys/travelpay-front` 링크. `live: https://travelpay.store`, `order: 4`, `featured: true` → 홈 대표 프로젝트 4개
+- **검증**: `npm run build` · `npm run verify` 통과, 다크/라이트 화면 확인
+- **추가 요청**: gajigaji04.github.io(P-12) `hidden: true` → 프로젝트 8개. 이미 공개된 페이지지만 앞서 숨긴 4개와 같이 리다이렉트는 두지 않음(배포 후 404). Spring Delivery Mini 커버 `src/assets/covers/projects/spring-delivery-mini.png` = Vercel 랜딩 첫 화면 캡처(1440×900, 라이트). TravelPay 커버 `travelpay.png` = https://www.travelpay.store 첫 화면 캡처(사용자가 준 `travelpay-front-d62tlhjof-…vercel.app` 도 로그인 보호 프리뷰 주소라 공개 도메인 사용)
+
 ### 2026-11-19 — 포트폴리오에서 뺄 프로젝트 숨김 (`feat/astro-portfolio-redesign`, 미커밋)
 
 - **요청**: 포트폴리오로 쓰지 않을 프로젝트를 사이트에서 안 보이게. 사용자가 `dist/projects` 에서 폴더를 직접 지웠지만 `dist` 는 빌드마다 다시 생성되므로 원본에서 처리
