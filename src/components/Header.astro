@@ -1,12 +1,12 @@
 ---
 import Icon from './Icon.astro';
 import TechIcon from './TechIcon.astro';
-import { PROFILE } from '../data/profile';
+import { PROFILE, SHOW_BLOG } from '../data/profile';
 
 const NAV = [
   { href: '/', label: 'Home' },
   { href: '/projects/', label: 'Projects' },
-  { href: '/blog/', label: 'Blog' },
+  ...(SHOW_BLOG ? [{ href: '/blog/', label: 'Blog' }] : []),
 ];
 const path = Astro.url.pathname.replace(/\/?$/, '/');
 const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));

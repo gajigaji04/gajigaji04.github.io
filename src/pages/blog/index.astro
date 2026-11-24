@@ -7,44 +7,63 @@ import { getPosts, countBy, slugifyTag } from '../../lib/content';
 const posts = await getPosts();
 const cats = countBy(posts, (p) => [p.data.category]);
 const tags = countBy(posts, (p) => p.data.tags.map(slugifyTag)).map(([t]) => t);
+const featured = posts.filter((p) => p.data.featured);
+const rest = posts.filter((p) => !p.data.featured);
+const LEAD = '백엔드 개발자로서의 설계 고민, 장애 해결 과정, 성능 개선 경험을 기록합니다.';
 ---
-<BaseLayout title="Blog" description="개발하면서 배우고 고민한 것을 기록합니다.">
+<BaseLayout title="Blog" description={LEAD}>
   <section class="sec page-head" data-blog>
     <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap">
       <div>
         <h1 class="h1">Blog<sup>{posts.length}</sup></h1>
-        <p class="lead">개발하면서 배우고 고민한 것을 기록합니다.</p>
+        <p class="lead">{LEAD}</p>
       </div>
       <a href="/rss.xml" class="muted" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px"><Icon name="rss" class="ico-xs" />RSS</a>
     </div>
 
-    <label class="srch" style="margin-top: 28px">
-      <Icon name="search" class="ico-sm" />
-      <span class="sr-only">글 검색</span>
-      <input type="search" placeholder="제목, 내용, 태그로 검색" autocomplete="off" data-local-search data-q />
-      <span class="kbd">/</span>
-    </label>
+    {
+      posts.length === 0 ? (
+        <p class="empty" style="margin-top: 28px">아직 공개한 글이 없습니다. 프로젝트에서 다룬 설계와 문제 해결 과정을 정리해 올릴 예정입니다.</p>
+      ) : (
+        <>
+          <label class="srch" style="margin-top: 28px">
+            <Icon name="search" class="ico-sm" />
+            <span class="sr-only">글 검색</span>
+            <input type="search" placeholder="제목, 내용, 태그로 검색" autocomplete="off" data-local-search data-q />
+            <span class="kbd">/</span>
+          </label>
 
-    <div class="bar" style="margin: 16px 0 0">
-      <div class="chips" role="group" aria-label="카테고리">
-        <button type="button" class="fp" aria-pressed="true" data-cat-btn="All">전체<span class="n">{posts.length}</span></button>
-        {cats.map(([c, n]) => <button type="button" class="fp" aria-pressed="false" data-cat-btn={c}>{c}<span class="n">{n}</span></button>)}
-      </div>
-    </div>
-    <div class="tagrow" role="group" aria-label="태그">
-      {tags.map((t) => <button type="button" class="tg" aria-pressed="false" data-tag={t}>#{t}</button>)}
-    </div>
+          <div class="bar" style="margin: 16px 0 0">
+            <div class="chips" role="group" aria-label="카테고리">
+              <button type="button" class="fp" aria-pressed="true" data-cat-btn="All">전체<span class="n">{posts.length}</span></button>
+              {cats.map(([c, n]) => <button type="button" class="fp" aria-pressed="false" data-cat-btn={c}>{c}<span class="n">{n}</span></button>)}
+            </div>
+          </div>
+          <div class="tagrow" role="group" aria-label="태그">
+            {tags.map((t) => <button type="button" class="tg" aria-pressed="false" data-tag={t}>#{t}</button>)}
+          </div>
 
-    <div class="cards">
-      {posts.map((p) => <PostCard post={p} full />)}
-    </div>
+          {featured.length > 0 && (
+            <>
+              <h2 class="group-h">대표 글</h2>
+              <div class="cards">{featured.map((p) => <PostCard post={p} full />)}</div>
+              {rest.length > 0 && <h2 class="group-h">전체 글</h2>}
+            </>
+          )}
+          <div class="cards">
+            {rest.map((p) => <PostCard post={p} full />)}
+          </div>
+        </>
+      )
+    }
     <p class="empty" hidden data-empty></p>
   </section>
 </BaseLayout>
 
 <script>
   const root = document.querySelector<HTMLElement>('[data-blog]');
-  if (root) {
+  // 글이 없으면 검색 · 필터 UI 를 그리지 않으므로 건너뜀
+  if (root && root.querySelector('[data-q]')) {
     const q = root.querySelector<HTMLInputElement>('[data-q]')!;
     const catBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-cat-btn]'));
     const tagBtns = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tag]'));
