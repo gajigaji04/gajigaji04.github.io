@@ -38,7 +38,7 @@
 
 | 하고 싶은 일 | 파일 |
 | --- | --- |
-| 글 추가 · 수정 | `src/content/blog/YYYY-MM-DD-<slug>.md` (컴포넌트가 필요할 때만 `.mdx`) |
+| 글 추가 · 수정 | `src/content/blog/YYYY-MM-DD-<slug>.md` (컴포넌트가 필요할 때만 `.mdx`, 새 글은 `docs/templates/blog.md` 복사) |
 | 글 썸네일 | `src/assets/covers/blog/<글 slug>.png` |
 | 글 숨기기(초안) | 같은 파일 frontmatter 의 `draft: true` |
 | 카드 모양 | `src/components/PostCard.astro` |
@@ -87,7 +87,9 @@ docs/
   CONVENTIONS.md            디자인 · 코드 · 커밋 규칙
   BRANCHING.md              브랜치 규칙
   FILES.md                  이 문서
+  WORKLOG.md                작업 기록 (최신이 위)
   templates/project.mdx     새 프로젝트 템플릿
+  templates/blog.md         새 블로그 글 템플릿 (섹션 구성 · draft: true)
 integrations/
   legacy-redirects.mjs      redirects.mjs → 리다이렉트 HTML 생성
 public/                     그대로 복사되는 파일 (프로필 사진, 파비콘)
@@ -104,7 +106,7 @@ src/
   pages/                    라우트 (파일 경로 = URL)
   styles/global.css         모든 스타일과 디자인 토큰
 astro.config.mjs
-CLAUDE.md                   Claude 작업 규칙 · 작업 기록
+CLAUDE.md                   Claude 작업 규칙 (작업 기록은 docs/WORKLOG.md)
 README.md
 ```
 

@@ -121,6 +121,8 @@ status: 완료                  # 진행 중 | 완료 | 보관  (이 세 가지�
 kind: 팀 프로젝트             # 상세 페이지 상단 표시 (기본값: 개인 프로젝트)
 deploy: Vercel                # (선택) 배포 환경
 repo: https://github.com/gajigaji04/todo-app   # (선택) 카드에 GitHub 아이콘
+# repoFront: https://github.com/...             # (선택) 프론트 저장소가 따로 있을 때 — 상세 페이지에 버튼 추가
+# milestone: 핵심 기능 구현 · 배포 완료           # (선택) 끝낸 범위 한 줄 — 카드 · 상세 페이지에 표시
 live: https://todo.example.com                  # (선택) 카드에 사이트 아이콘
 order: 5                      # (선택) 노출 순서. 작을수록 앞, 없으면 sortDate 최신순으로 뒤에
 release:                      # (선택) 공개 릴리스 — 카드에 버전, 상세 페이지에 릴리스 버튼
@@ -135,7 +137,7 @@ featured: true                # 홈에 노출 (정렬 순서대로 최대 4개)
 | 필드 | 필수 | 메모 |
 | --- | --- | --- |
 | `code`, `name`, `summary`, `role`, `team`, `period`, `sortDate`, `stack`, `status` | O | 빠지면 빌드 오류 |
-| `kind`, `deploy`, `repo`, `live`, `order`, `release`, `featured`, `hidden` | | `repo` · `release.url` 은 전체 URL(https://…) 이어야 함 |
+| `kind`, `deploy`, `milestone`, `repo`, `repoFront`, `live`, `order`, `release`, `featured`, `hidden` | | `repo` · `release.url` 은 전체 URL(https://…) 이어야 함 |
 
 ### 본문 구성
 
@@ -203,15 +205,16 @@ import Trouble from '../../components/mdx/Trouble.astro';
 
 1. 파일 이름: `YYYY-MM-DD-영문-slug.md` → URL 은 날짜를 뺀 `/blog/영문-slug/`
    `2026-11-20-astro-migration.md` → `/blog/astro-migration/`
-2. 아래 frontmatter 를 복사해 채우고 본문을 씁니다
+2. `docs/templates/blog.md` 를 복사하거나(섹션 구성 포함) 아래 frontmatter 를 채우고 본문을 씁니다
 
 ```yaml
 ---
 title: "Jekyll 에서 Astro 로 옮긴 이유"
 description: "목록 · 검색 · 링크 미리보기에 보이는 1~2문장 요약"
 date: 2026-11-20T10:00:00+09:00
-category: Dev                 # 목록의 카테고리 탭. 적게 유지 (Dev, TIL, Retrospect …)
+category: Engineering         # Engineering · Troubleshooting · Performance · Development 중 하나 (다른 값이면 빌드 실패)
 tags: [astro, github-pages]   # 소문자, 띄어쓰기는 하이픈
+# featured: true              # (선택) 블로그 목록 위쪽 "대표 글" 묶음에 표시
 # updated: 2026-11-25         # (선택) 수정일 표시
 # draft: true                 # (선택) 배포에서 제외. npm run dev 에서는 보임
 # slug: custom-url            # (선택) 파일 이름 대신 이 값을 URL 로 사용
@@ -224,9 +227,11 @@ tags: [astro, github-pages]   # 소문자, 띄어쓰기는 하이픈
 | --- | --- | --- |
 | `title`, `description`, `date`, `category` | O | `date` 는 `+09:00` 을 붙여야 날짜가 하루 밀리지 않음 |
 | `tags` | | 없으면 `[]` |
-| `updated`, `draft`, `slug` | | |
+| `featured`, `updated`, `draft`, `slug` | | |
 
-- 카테고리 탭과 태그 목록은 글에서 **자동으로** 만들어집니다 (따로 등록할 필요 없음)
+- 카테고리는 4개로 고정입니다: **Engineering**(설계 · 아키텍처 · 기술적 의사결정), **Troubleshooting**(실제 오류 · 장애 해결), **Performance**(성능 측정 · 분석 · 최적화), **Development**(기술 학습 · 개발 도구 · TIL). 탭은 글이 있는 카테고리만 표시됩니다. 바꾸려면 `src/content.config.ts` 의 enum 을 고칩니다
+- 태그 목록은 글에서 **자동으로** 만들어집니다
+- 글이 0편이면 블로그 목록에 빈 상태 안내가 나오고, 홈의 Blog 섹션은 숨겨집니다 (첫 글 `2026-11-24-introduction.md` 게시 후 표시 중)
 - 홈에는 최신 2편, 30일 이내 글에는 "새 글" 점이 표시됩니다
 - 읽기 시간은 글자 수로 자동 계산됩니다
 
@@ -272,7 +277,7 @@ const hello = 'world';
 | URL 변경 | 파일 이름 또는 `slug:` 변경 + `redirects.mjs` 에 옛 주소 → 새 주소 추가 |
 
 > `npm run verify` 는 `redirects.mjs` 의 이동 대상이 없으면 실패합니다.
-> 예: 예시 글 `welcome-to-jekyll` 을 지우면 `redirects.mjs` 에서 그 글을 가리키는 줄도 지우거나 대상을 `/blog/` 로 바꿔야 합니다.
+> 예: 2026-11-24 예시 글 3편을 지울 때 `redirects.mjs` 의 대상을 `/blog/` 로 바꾸고, 지운 글의 Astro 주소(`/blog/post-test/` 등)도 `/blog/` 로 보내도록 추가했습니다.
 
 ---
 
@@ -298,7 +303,7 @@ const hello = 'world';
 
 - [x] `src/data/profile.ts` — 이름, 한 줄 소개, 상태, 직무, About, 기술 스택
 - [x] `src/content/projects/sample-project-02~04.mdx` — 실제 프로젝트로 교체 (템플릿은 `docs/templates/project.mdx`)
-- [ ] `src/content/blog/2026-09-15-welcome-to-jekyll.md`, `2019-03-23-integrating-razorpay.md` — Jekyll · 테마 기본 글. 삭제 시 `redirects.mjs` 의 해당 줄도 정리
+- [x] Jekyll · 테마 기본 글 3편 — 2026-11-24 삭제, 옛 주소는 `/blog/` 로 리다이렉트
 
 ---
 
