@@ -31,6 +31,12 @@ const ALIASES: Record<string, string> = {
   'github-actions': 'githubactions',
   'spring data jpa': 'spring',
   kafka: 'apachekafka',
+  'java 21': 'openjdk',
+  'java 17': 'openjdk',
+  junit: 'junit5',
+  'spring cloud gateway': 'spring',
+  eureka: 'spring',
+  openfeign: 'spring',
   jwt: 'jsonwebtokens',
 };
 

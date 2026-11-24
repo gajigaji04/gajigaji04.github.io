@@ -46,7 +46,8 @@ const sections = headings.filter((h) => h.depth === 2);
           <div class="cta" style="margin-top: 8px">
             {p.release && <a class="btn pri" href={p.release.url}><Icon name="download" class="ico-sm" />{p.release.version} 릴리스 받기</a>}
             {p.live && <a class:list={['btn', { pri: !p.release }]} href={p.live}><Icon name="globe" class="ico-sm" />사이트 보기</a>}
-            {p.repo && <a class="btn" href={p.repo}><TechIcon name="GitHub" size={15} />GitHub</a>}
+            {p.repo && <a class="btn" href={p.repo}><TechIcon name="GitHub" size={15} />{p.repoFront ? 'GitHub · 백엔드' : 'GitHub'}</a>}
+            {p.repoFront && <a class="btn" href={p.repoFront}><TechIcon name="GitHub" size={15} />GitHub · 프론트엔드</a>}
           </div>
         )
       }
@@ -56,6 +57,7 @@ const sections = headings.filter((h) => h.depth === 2);
       <div><dt>역할</dt><dd>{p.role}</dd></div>
       <div><dt>기간</dt><dd>{p.period}</dd></div>
       <div><dt>인원</dt><dd>{p.team}</dd></div>
+      {p.milestone && <div style="grid-column: 1 / -1"><dt>완료 범위</dt><dd>{p.milestone}</dd></div>}
       {p.deploy && <div><dt>배포</dt><dd>{p.deploy}</dd></div>}
       {p.release && <div><dt>최신 릴리스</dt><dd><a href={p.release.url}>{p.release.version}</a>{p.release.date && ` · ${ymd(p.release.date)}`}</dd></div>}
       <div style="grid-column: 1 / -1"><dt>기술 스택</dt><dd class="techs" style="color: var(--fg); gap: 14px">{p.stack.map((t) => <TechIcon name={t} size={16} label />)}</dd></div>

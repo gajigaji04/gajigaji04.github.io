@@ -17,6 +17,7 @@
 | [docs/FILES.md](docs/FILES.md) | **무엇을 바꾸려면 어느 파일을 열어야 하는지** (파일 위치 안내) |
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | 디자인 · 코드 · 콘텐츠 · 커밋 메시지 규칙 |
 | [docs/BRANCHING.md](docs/BRANCHING.md) | 브랜치 규칙, Claude 작업 요청 흐름, 기존 브랜치 정리 |
+| [docs/WORKLOG.md](docs/WORKLOG.md) | 작업 기록 (최신이 위) |
 | [CLAUDE.md](CLAUDE.md) | Claude 가 이 저장소에서 작업할 때 따르는 규칙 |
 
 ## 명령어
@@ -34,7 +35,7 @@
 | 내용 | 파일 |
 | --- | --- |
 | 프로필 · About · 기술 스택 · 이력서 PDF 경로 | `src/data/profile.ts` |
-| 블로그 글 | `src/content/blog/YYYY-MM-DD-slug.md` (또는 `.mdx`) |
+| 블로그 글 | `src/content/blog/YYYY-MM-DD-slug.md` (또는 `.mdx`, 템플릿 `docs/templates/blog.md`) |
 | 프로젝트 | `src/content/projects/*.mdx` |
 | 프로필 이미지 | `public/assets/bio-photo.jpg` |
 | 프로젝트 커버 이미지 | `src/assets/covers/projects/<프로젝트 파일명>.png` (파일만 넣으면 적용) |

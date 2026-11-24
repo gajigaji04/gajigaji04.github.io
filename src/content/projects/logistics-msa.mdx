@@ -1,0 +1,190 @@
+---
+code: P-14
+name: Logistics MSA
+summary: 5인 팀 물류 MSA 프로젝트. API Gateway 와 User Service 를 맡아 JWT 인증 · RBAC · 회원 상태 실시간 검증, 회원 관리와 Refresh Token Rotation · 재사용 탐지를 구현했습니다.
+role: 팀 프로젝트 · API Gateway, User Service
+team: 5명
+period: 2026.10.14 — 2026.11.14
+sortDate: 2026-11-14
+stack: [Java 17, Spring Boot, Spring Cloud Gateway, Eureka, OpenFeign, Spring Security, JWT, Caffeine, PostgreSQL]
+status: 완료
+milestone: API Gateway 및 User Service 핵심 기능 구현, 인증 · 인가 및 Refresh Token 보안 검증 완료
+kind: 팀 프로젝트 · MSA
+repo: https://github.com/yuksabal-team6/logistics-msa
+order: 4
+featured: true
+---
+
+import ArchFlow from '../../components/mdx/ArchFlow.astro';
+import Trouble from '../../components/mdx/Trouble.astro';
+
+## 프로젝트 소개
+
+Spring Boot 와 Spring Cloud 로 만든 B2B 물류 관리 · 배송 시스템입니다. 업체가 다른 업체의 상품을 주문하면 공급 업체의 관리 허브에서 재고가 빠지고, 허브 사이를 거쳐 요청 업체까지 배송됩니다. 서비스마다 DB 가 따로라 여러 서비스에 걸친 작업을 한 트랜잭션으로 묶을 수 없다는 점이 설계 결정 대부분의 출발점이었습니다.
+
+- 기간: 2026.10.14 — 2026.11.14 · 5인 팀 (스파르타 내일배움캠프 숙련 프로젝트)
+- 서비스: Eureka · API Gateway · user · hub · company · order · delivery, 공통 모듈 `common`
+- 역할 4단계: 관리자(MASTER) · 일반(USER) · 업체 관리자(COMPANY) · 배송 담당자(DELIVERY)
+- 기술: Java 17, Spring Boot 3.3, Spring Cloud 2023.0 (Gateway · Eureka · OpenFeign), Spring Security, JWT(JJWT), Caffeine, Spring Data JPA, PostgreSQL 16, Docker Compose, JUnit 5 · Mockito, k6
+
+## 담당 역할과 기여 범위
+
+저는 **API Gateway** 와 **User Service** 를 맡았습니다. 모든 외부 요청이 지나가는 입구의 인증 · 인가, 그리고 회원 · 토큰 관리가 제 범위입니다.
+
+| 담당 | 서비스 | 서비스 밖에서 맡은 일 |
+| --- | --- | --- |
+| **본인** | api-gateway, user-service | 게이트웨이 인증 · 인가(역할 검사, 사용자 헤더 전달), Gateway 캐싱 부하 테스트 |
+| hub 담당 | hub-service | 재고 동시성 · 중복 요청 처리, 허브 · 경로 초기 데이터 |
+| company 담당 (팀장) | company-service | 전체 서비스 통합 테스트, 설계 문서(ERD · 구조도 · 결정 기록) |
+| order 담당 | order-service | 초기 개발 환경(멀티 모듈, Docker Compose, Eureka), `common` 모듈(공통 응답 · 오류 코드, Feign 공통 설정) |
+| delivery 담당 | delivery-service | 서비스 간 호출 재시도 설정 |
+
+- 프로젝트 초기 구성, 통합 Swagger, Feign 재시도 · 오류 변환은 팀원 작업이고, User Service 는 이를 가져다 썼습니다.
+- 회원 삭제 · 비활성화의 "먼저 비활성화 → 확인 → 확정" 3단계 흐름은 delivery 담당 팀원의 제안을 받아 구현했습니다.
+
+## Architecture
+
+<ArchFlow
+  nodes={[
+    { name: 'Client', desc: 'Bearer JWT' },
+    { name: 'API Gateway', desc: 'JWT · 회원 상태 · RBAC', highlight: true },
+    { name: 'Services', desc: 'user · hub · company · order · delivery' },
+    { name: 'PostgreSQL', desc: '서비스별 스키마' },
+  ]}
+  note="외부 요청은 모두 Gateway(8080)를 거치고, 서비스 포트는 외부에 열지 않습니다. 서비스는 Eureka 로 서로를 찾고 내부 API(/internal/**, Gateway 에서 차단)를 OpenFeign 으로 호출합니다. 다른 서비스의 데이터는 외래 키 없이 ID 로만 참조합니다."
+/>
+
+Gateway 의 요청 처리 순서는 다음과 같습니다.
+
+1. 클라이언트가 보낸 `X-User-Id` · `X-User-Role` 헤더를 지웁니다 (공개 경로 포함).
+2. 공개 경로(회원가입 · 로그인 · 재발급 · Swagger)가 아니면 Bearer JWT 를 검증합니다.
+3. User Service 에서 회원의 현재 상태(탈퇴 · 활성 · 역할)를 확인합니다.
+4. 경로 · 메서드별 역할 규칙을 검사합니다.
+5. 검증된 토큰 값으로 사용자 헤더를 다시 넣어 하위 서비스로 넘깁니다.
+
+## 핵심 구현 및 설계 결정
+
+### 1. API Gateway 인증 · 인가
+
+**배경** — 서비스마다 토큰을 검증하면 검증 로직이 흩어지고, 서비스는 회원 DB 를 직접 볼 수 없습니다. 팀은 "역할 검사는 Gateway, 내 업체 · 내 배송인지 같은 소유자 판단은 각 서비스"로 신뢰 경계를 나눴습니다.
+
+**설계 · 구현**
+
+- 모든 요청보다 먼저 실행되는 `WebFilter` 에서 JWT 검증 → 회원 상태 → 역할 규칙 순으로 확인합니다.
+- 공개 경로와 역할 규칙은 `application.yml` 에 메서드 + 경로 패턴으로 선언하고, Gateway 라우팅과 같은 `PathPattern` 문법으로 비교합니다.
+- **기본 거부**: 맞는 규칙이 없으면 조회(GET)는 허용하고 쓰기(POST · PUT · PATCH · DELETE)는 거부합니다. 규칙을 빠뜨려 쓰기 API 가 열리는 것을 막기 위해서입니다.
+- 하위 서비스는 Gateway 가 넣은 `X-User-Id` · `X-User-Role` 만 신뢰합니다. 클라이언트가 같은 헤더를 보내도 1번 단계에서 지워집니다.
+- **공통 오류 응답**: Gateway 자체 오류를 서비스와 같은 JSON 형식으로 바꿉니다. 연결 1초 · 응답 5초 타임아웃을 두고, 응답 시간 초과 504 · 응답 도중 연결 끊김 502 · Eureka 인스턴스 없음이나 연결 실패 503 · 그 밖의 예외 500 으로 나눕니다. 예외 메시지는 응답에 넣지 않습니다. 504 는 하위 서비스가 처리를 계속했을 수 있어 "결과를 확인한 뒤 재시도"하도록 안내합니다.
+
+**검증** — 인증 · 역할 규칙 · 오류 처리별 통합 테스트(`GatewayAuthenticationIntegrationTest`, `GatewayRoleRulesIntegrationTest`, `GatewayErrorHandlingIntegrationTest`)와 JWT 검증 단위 테스트를 작성했습니다.
+
+### 2. 회원 상태 실시간 검증과 Caffeine 캐싱
+
+**배경** — JWT 는 1시간 유효하고 무효화 수단이 없어, 비활성화하거나 역할을 바꾼 회원도 기존 토큰으로 계속 요청할 수 있었습니다.
+
+**설계 · 구현**
+
+- 인증된 요청마다 Gateway 가 User Service 내부 API(`/internal/users/{id}`)로 현재 상태를 조회합니다. Gateway 는 리액티브라 Feign 대신 로드밸런서를 붙인 `WebClient` 를 쓰고, 연결 1초 · 응답 2초 타임아웃을 둡니다.
+- 결과별 응답: 탈퇴 · 없음 401, 비활성 403 `ACCOUNT_DISABLED`, 토큰 역할 ≠ DB 역할 401 `ROLE_CHANGED`(재로그인 유도).
+- **장애 시 정책은 fail-closed** — User Service 조회가 실패하면 통과시키지 않고 503 `USER_SERVICE_UNAVAILABLE` 로 막습니다. 조회 실패 변환은 하위 서비스 호출보다 앞에 두어, 하위 서비스에서 난 오류까지 503 으로 바뀌지 않게 했습니다.
+- 요청마다 호출이 하나 늘어나는 비용은 **Caffeine 캐시**로 줄였습니다. 회원 ID 별로 **TTL 5초**, 최대 10,000건을 저장합니다.
+  - 성공 결과만 저장합니다. 탈퇴(404)는 저장하지 않아 바로 반영되고, 조회 실패도 저장하지 않아 장애 중에 캐시로 통과하는 일이 없습니다.
+  - 같은 회원의 동시 요청은 진행 중인 조회 하나를 함께 기다립니다(`AsyncCache`).
+  - TTL 을 0 으로 설정하면 캐시를 끕니다. 부하 테스트에서 ON/OFF 비교에 이 설정을 썼습니다.
+- **감수한 점**: 상태 · 역할 변경이 최대 5초 늦게 반영됩니다.
+
+**검증** — 상태 확인 통합 테스트(PR 기준 13개 추가), 캐시 단위 테스트(TTL 안 재조회 없음 · TTL 후 재조회 · 실패 미저장 · 동시 요청 1회 조회), 스텁 서버로 User Service 를 대신한 캐시 통합 테스트(연속 요청 시 1회 조회, 장애 결과 미캐시로 복구 즉시 통과). 성능 수치는 아래 [성능 개선 및 검증](#성능-개선-및-검증)에 정리했습니다.
+
+### 3. 회원 인증과 Refresh Token Rotation
+
+**배경** — Access Token 만으로는 로그인 유지와 토큰 탈취 대응을 함께 할 수 없어 Refresh Token 을 도입했습니다. Access Token 유효 기간은 테스트 편의를 위해 기존 1시간을 유지했습니다.
+
+**설계 · 구현**
+
+- Refresh Token 은 JWT 가 아닌 32바이트 랜덤 문자열이라 Gateway 에서 Access Token 으로 쓸 수 없습니다. DB 에는 **SHA-256 해시만** 저장하고 유효 기간은 7일입니다.
+- **Rotation**: 재발급하면 새 Access · Refresh Token 을 주고, 쓴 토큰은 지우지 않고 `used_at` 을 남깁니다. 재발급한 Access Token 에는 바뀐 역할이 들어갑니다.
+- **재사용 탐지 · 전체 폐기**: 이미 쓴 토큰이 다시 오면 탈취로 보고 그 회원의 모든 기기 토큰을 폐기한 뒤 401 을 줍니다. 정상 사용자의 재시도도 전체 로그아웃되지만 재로그인으로 복구되므로 감수했습니다.
+- 폐기가 예외로 롤백되지 않도록 `noRollbackFor` 로 커밋합니다.
+- 기기마다 토큰을 따로 발급하고, 로그아웃은 본인 토큰만 지웁니다. 만료 토큰은 로그인할 때 정리해 별도 배치 없이 행이 쌓이지 않게 했습니다.
+
+**검증** — `AuthRefreshIntegrationTest`: 해시만 저장 · 재발급 · 재사용 시 전체 폐기 · 역할 반영 · 로그아웃 · 다른 회원 토큰으로 로그아웃 불가 · 기기별 독립 로그아웃.
+
+### 4. 관리자 권한과 회원 상태 변경 보호
+
+**설계 · 구현**
+
+- 요청자가 활성 MASTER 인지 헤더 역할과 DB 역할을 대조합니다. Gateway 를 거치지 않은 직접 호출은 403 입니다.
+- 자기 자신의 역할 변경 · 비활성화 · 삭제, **마지막 활성 MASTER** 의 강등 · 비활성화 · 삭제는 422 로 막습니다.
+- 이미 같은 역할 · 상태면 변경 없이 200 을 돌려줘 같은 요청을 다시 보내도 결과가 같습니다.
+- 삭제 · 비활성화 · DELIVERY 역할 변경은 다른 서비스의 진행 중 업무(주문 · 배송 · 업체)를 확인해야 합니다. 분산 트랜잭션이 없으므로 세 단계로 나눴습니다.
+  1. **hold** — 계정을 먼저 비활성화해 커밋합니다. 다른 서비스는 비활성 회원을 새 담당자로 지정하지 않아, 확인과 변경 사이에 새 업무가 생기는 틈이 줄어듭니다.
+  2. **확인** — Feign 으로 진행 중 업무를 조회합니다. 업무가 있으면 409, 확인하지 못하면(오류 · 타임아웃) 502 로 막습니다.
+  3. **확정 또는 되돌리기** — 대상 행을 잠그고, 1단계 뒤에 다른 변경이 없었을 때만(`updated_at` 비교) 확정하거나 비활성화를 되돌립니다.
+- **한계**: 상대 서비스가 회원 확인을 마치고 저장하기 직전이면 놓칠 수 있습니다. 3단계 전에 서버가 멈추면 회원은 비활성으로 남고, MASTER 가 다시 활성화하면 됩니다.
+
+### 5. 서비스 간 통신과 트랜잭션 경계
+
+- User Service 는 hub · company · order · delivery 내부 API 를 OpenFeign 으로 호출합니다(연결 3초 · 응답 5초). 재시도와 5xx 오류 변환은 팀 `common` 모듈 설정을 따릅니다.
+- 회원가입의 허브 · 업체 존재 확인, MASTER 회원 수정의 내부 API 호출을 **트랜잭션 밖**으로 옮기고, DB 쓰기만 트랜잭션으로 처리합니다(아래 트러블슈팅 참고).
+- 허브 · 업체는 값이 바뀔 때만 존재를 확인해 불필요한 호출을 줄였습니다.
+- 다른 서비스가 오류 · 타임아웃 · 4xx 를 주면 "확인하지 못함"으로 보고 변경을 막습니다.
+
+## 주요 트러블슈팅
+
+<Trouble
+  problem="두 MASTER 가 서로를 동시에 비활성화하면 활성 MASTER 가 한 명도 남지 않을 수 있었습니다."
+  cause="'마지막 활성 MASTER 인지' 확인이 잠금 밖에서 이뤄져, 두 요청이 각각 '상대가 남는다'고 보고 함께 통과했습니다."
+  fix="활성 MASTER 전체를 비관적 잠금(PESSIMISTIC_WRITE)으로 id 순서대로 잠근 뒤 세도록 바꿨습니다. 요청끼리 같은 순서로 잠가 교착을 피하고, 대상 행보다 먼저 잠급니다. 동시 요청 통합 테스트로 활성 MASTER 한 명이 남는 것을 확인했습니다 (#247)."
+/>
+
+<Trouble
+  problem="관리자의 비활성화와 회원 본인의 프로필 수정이 겹치면 비활성화가 덮어써질 수 있었습니다."
+  cause="JPA 가 User 의 모든 컬럼을 다시 쓰기 때문에, 먼저 읽은 쪽이 나중에 저장하면 그사이 커밋된 변경이 사라졌습니다."
+  fix="변경 전에 대상 회원 행을 잠그고 읽도록 했습니다. MASTER 의 회원 정보 수정은 확인 시점의 updated_at 과 다르면 저장하지 않고 422 를 줍니다. '비활성화와 본인 수정이 겹쳐도 비활성화가 덮어써지지 않는다' 동시성 테스트로 확인했습니다 (#247)."
+/>
+
+<Trouble
+  problem="같은 Refresh Token 으로 동시에 재발급을 요청하면 두 요청이 모두 새 토큰을 받을 수 있었습니다."
+  cause="'사용했는지' 읽기와 '사용 처리' 쓰기 사이에 다른 요청이 끼어들 수 있었습니다."
+  fix="used_at 이 비어 있을 때만 갱신하는 조건부 UPDATE 로 바꾸고, 바뀐 행 수가 0 이면 다른 요청이 먼저 쓴 것으로 보고 재사용과 똑같이 전체 폐기 후 401 을 줍니다. 단위 테스트로 확인했습니다 (#298)."
+/>
+
+<Trouble
+  problem="회원가입 · 회원 수정이 다른 서비스를 호출하는 동안 DB 커넥션을 계속 잡고 있었습니다."
+  cause="Feign 호출이 @Transactional 안에 있어, 상대 서비스가 느려지면 커넥션 풀이 고갈될 위험이 있었습니다."
+  fix="회원 관리 서비스는 트랜잭션 없이(NOT_SUPPORTED) Feign 확인을 먼저 끝내고, DB 쓰기만 별도 컴포넌트의 짧은 트랜잭션으로 처리하도록 나눴습니다 (#245)."
+/>
+
+## 성능 개선 및 검증
+
+**목적** — 회원 상태 실시간 검증을 넣은 뒤, 인증된 요청마다 User Service 호출이 하나씩 늘었습니다. `GET /api/v1/auth/me` 는 Gateway 의 상태 조회와 User Service `/me` 를 합쳐 요청당 User Service 를 2번 호출합니다. Caffeine 캐시가 이 비용을 얼마나 줄이는지 확인했습니다.
+
+**측정 조건** (2026-11-08)
+
+- 도구: k6 (Docker `grafana/k6`), `constant-vus` 50 VU · 30초
+- 조건마다 Gateway 재기동 → 15초 워밍업 → 3회 측정
+- 캐시 ON: TTL 5초(기본값) / 캐시 OFF: 환경 변수로 TTL 0초
+- 환경: 로컬 Docker Compose (Windows 11, Docker Desktop), Gateway `-Xmx192m -XX:+UseSerialGC`
+- 토큰: setup 에서 한 번 로그인한 같은 회원의 Access Token 을 모든 VU 가 사용
+
+**결과** (3회 평균)
+
+| 조건 | 처리량 | 평균 | p95 | p99 | 실패율 |
+| --- | --- | --- | --- | --- | --- |
+| 캐시 OFF | 1,039 req/s | 47.6ms | 81.0ms | 104.8ms | 0% |
+| 캐시 ON (TTL 5초) | 1,529 req/s | 32.3ms | 59.9ms | 80.1ms | 0% |
+| 변화 | **+47%** | −32% | **−26%** | −24% | |
+
+**해석**
+
+- TTL 안에서는 요청당 User Service 호출이 2회 → 1회로 줄어 처리량이 약 47% 늘고 p95 가 약 26% 줄었습니다.
+- 회차 간 편차(1~4%)보다 조건 간 차이가 훨씬 커서 캐시 효과로 봤습니다. 6회 측정 모두 실패율 0% 였습니다.
+- 모든 요청이 같은 회원 토큰을 써 적중률이 거의 100% 인 조건입니다. 여러 회원이 섞이면 개선 폭은 더 작을 수 있습니다.
+- 로컬 단일 머신 측정이라 절대 수치가 아닌 같은 환경의 ON/OFF 상대값으로만 비교합니다. 측정 스크립트와 재현 방법은 저장소 `api-gateway/loadtest/` 에 남겼습니다.
+
+## 테스트와 협업
+
+- **팀 통합 테스트**: 각 서비스 담당자가 작성한 테스트 시나리오 69개 모두 통과(팀 전체). 저는 User Service 시나리오(`UserScenarioTest`)와 누락 시나리오(USE-2 · 3 · 4 · 5 · 7)를 작성하고, USE-12~16(비활성 회원 접근 제한 · 탈퇴 처리 · 업체 관리자 정합성 · 의존성 장애 · 소프트 삭제)의 단위 테스트를 추가했습니다.
+- **서비스 테스트**: User Service 는 단위 테스트(Mockito)와 Controller → DB 통합 테스트, 동시성 테스트(`UserRowLockConcurrencyIntegrationTest`)로, Gateway 는 스텁 서버로 User Service 를 대신한 통합 테스트로 검증했습니다.
+- **협업**: 이슈 → 브랜치 → PR → 관련 기능 담당 팀원 리뷰로 진행했습니다. 내부 API 계약은 제공하는 쪽이 쓰고 호출하는 쪽이 확인했으며, 회원 삭제 · 비활성화 시 확인할 업무 범위는 delivery · company 담당자의 답변을 받아 정했습니다.
+- 팀 차원에서 반복적인 테스트 코드 작성과 장애 · 경합 상황 연출에 Claude Code 를 썼고, 기대 결과와 다르면 테스트를 맞추지 않고 버그 이슈로 넘기는 규칙을 문서로 고정했습니다.

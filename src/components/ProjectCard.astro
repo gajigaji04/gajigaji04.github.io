@@ -2,6 +2,7 @@
 import Cover from './Cover.astro';
 import Icon from './Icon.astro';
 import TechIcon from './TechIcon.astro';
+import { techIcon } from '../lib/tech';
 import SampleBadge from './SampleBadge.astro';
 import type { Project } from '../lib/content';
 
@@ -13,6 +14,14 @@ interface Props {
 const { project, meta = false } = Astro.props;
 const p = project.data;
 const href = `/projects/${project.id}/`;
+// 카드에는 아이콘 있는 핵심 기술만 앞에서 6개(같은 아이콘은 한 번만). 전체 목록은 상세 페이지에
+const seen = new Set<string>();
+const cardStack = p.stack.filter((t) => {
+  const path = techIcon(t).path;
+  if (!path || seen.has(path)) return false;
+  seen.add(path);
+  return true;
+}).slice(0, 6);
 ---
 <article class="card" data-stack={JSON.stringify(p.stack)}>
   <Cover kind="projects" id={project.id} title={p.name} label={p.code} />
@@ -29,8 +38,9 @@ const href = `/projects/${project.id}/`;
       }
     </div>
     <p class="desc">{p.summary}</p>
+    {p.milestone && <p class="cmeta"><Icon name="check" class="ico-xs" />{p.milestone}</p>}
     {meta && <p class="cmeta">{p.role} · {p.period}</p>}
-    <div class="techs">{p.stack.map((t) => <TechIcon name={t} size={18} />)}</div>
+    <div class="techs">{cardStack.map((t) => <TechIcon name={t} size={18} />)}</div>
     <div class="cfoot">
       <span class="pills">
         <span class="pill">{p.status === '진행 중' && <span class="dot" aria-hidden="true"></span>}{p.status}</span>

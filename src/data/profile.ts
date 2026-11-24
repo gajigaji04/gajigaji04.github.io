@@ -29,7 +29,7 @@ export const PROFILE = {
 
   /** 표시 이름. 비워 두면 한 줄 소개만 표시됩니다. */
   name: { value: '' } as Sampled & { value: string },
-  headline: { value: '웹 개발자 — 새로운 기술을 탐구하고 실제 서비스에 적용하며 성장하는 백엔드 개발자' } as Sampled & { value: string },
+  headline: { value: '동시 요청 · 장애 · 중복 처리까지 고려해 안정적인 서비스를 만드는 백엔드 개발자' } as Sampled & { value: string },
   status: { value: '구직 중' },
   role: { value: 'Backend Developer' },
   /** 이력서 PDF 경로. 예: '/resume.pdf' (public/resume.pdf 에 파일을 두세요). 비어 있으면 버튼이 "준비 중" 상태로 표시됩니다. */
@@ -50,13 +50,16 @@ export const PROFILE = {
  * 기술 스택 — 카테고리별로 이름만 적으면 아이콘이 자동으로 붙습니다(simple-icons, 빌드 시 조회).
  * 아이콘이 없는 이름은 글자 표시로 대체됩니다. 이름 매칭 규칙과 별칭 추가는 src/lib/tech.ts 참고.
  *
- * 실제 저장소에서 사용이 확인된 기술만 적습니다(2026-11-16 기준 분석).
+ * 영역별로 실제 프로젝트에서 쓴 기술과 활용 경험 한 줄(desc). 숙련도 표시는 하지 않습니다 (2026-11-24 사용자 확정).
  */
 export const STACK_IS_SAMPLE = false;
-export const STACK: { category: string; items: string[] }[] = [
-  { category: 'Backend', items: ['Spring Boot', 'Spring Security', 'Spring Data JPA', 'Node.js', 'Express', 'Prisma', 'Apache Kafka'] },
-  { category: 'Frontend', items: ['React', 'Next.js', 'Vite', 'Tailwind CSS'] },
-  { category: 'Database', items: ['PostgreSQL', 'MySQL', 'Redis'] },
-  { category: 'DevOps & Tools', items: ['Docker', 'GitHub Actions', 'Nginx', 'AWS', 'Prometheus', 'Grafana', 'Git', 'CMake'] },
-  { category: 'Language', items: ['Java', 'C', 'TypeScript', 'JavaScript', 'Python'] },
+
+/** 블로그 노출. false 면 메뉴 · 홈 섹션 · 404 버튼 · RSS 아이콘에서 숨깁니다(글 페이지와 옛 URL 리다이렉트는 유지). 실제 글이 생기면 true */
+export const SHOW_BLOG = true;
+export const STACK: { category: string; desc: string; items: string[] }[] = [
+  { category: 'Backend', desc: 'REST API 설계, 트랜잭션 관리, 인증 · 인가, MSA 기반 서비스 구현', items: ['Java 21', 'Spring Boot', 'Spring Data JPA', 'Spring Security', 'Spring Cloud Gateway'] },
+  { category: 'Database & Messaging', desc: '데이터 정합성, 동시성 제어, 멱등성, 비동기 이벤트 처리', items: ['PostgreSQL', 'MySQL', 'Redis', 'Kafka'] },
+  { category: 'Infrastructure & Monitoring', desc: '컨테이너 환경 구성, 배포 경험, 성능 지표 수집 및 모니터링', items: ['Docker', 'AWS', 'Prometheus', 'Grafana'] },
+  { category: 'Testing & Performance', desc: '통합 테스트, 장애 시나리오 검증, 부하 테스트 및 병목 분석', items: ['JUnit', 'Testcontainers', 'k6'] },
+  { category: 'Frontend & Others', desc: '컴포넌트 기반 UI 구현, API 연동, 서비스 간 통신 및 장애 대응', items: ['React', 'TypeScript', 'Vite', 'React Router', 'Node.js', 'Eureka', 'OpenFeign', 'Resilience4j'] },
 ];

@@ -20,10 +20,13 @@ const blog = defineCollection({
     description: z.string(),
     date: z.coerce.date(),
     updated: z.coerce.date().optional(),
-    category: z.string(),
+    /** 4개로 고정 — 다른 값이면 빌드 실패 */
+    category: z.enum(['Engineering', 'Troubleshooting', 'Performance', 'Development']),
     tags: z.array(z.string()).default([]),
     slug: z.string().optional(),
     draft: z.boolean().default(false),
+    /** (선택) 대표 글. 블로그 목록 위쪽 "대표 글" 묶음에 표시 */
+    featured: z.boolean().default(false),
     sample: z.boolean().default(false),
   }),
 });
@@ -44,7 +47,11 @@ const projects = defineCollection({
     status: z.enum(['진행 중', '완료', '보관']),
     kind: z.string().default('개인 프로젝트'),
     deploy: z.string().optional(),
+    /** (선택) 지금까지 끝낸 범위 한 줄. 카드와 상세 페이지에 표시 */
+    milestone: z.string().optional(),
     repo: z.url().optional(),
+    /** (선택) 프론트엔드 저장소가 따로 있을 때. 있으면 상세 페이지 버튼이 백엔드 / 프론트엔드로 나뉩니다 */
+    repoFront: z.url().optional(),
     live: z.string().optional(),
     /** (선택) 노출 순서. 작을수록 앞. 없으면 order 가 있는 항목 뒤에 sortDate 최신순 */
     order: z.number().optional(),
